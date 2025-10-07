@@ -46,7 +46,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
 
   if (!article) return null;
 
-  const { color: viralityColorClass, key: viralityKey } = getViralityStyle(article.viralityDescription);
+  const { color: viralityColorClass, key: viralityKey } = getViralityStyle(article.viralityDescription || '');
   const viralityDisplayText = uiText[viralityKey] || article.viralityDescription;
 
 
@@ -85,7 +85,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
           </div>
           
           <div className="prose max-w-none text-lg text-stone-800 leading-relaxed">
-            {article.body.split('\n').map((paragraph, index) => (
+            {article.body && article.body.split('\n').map((paragraph, index) => (
               paragraph.trim() && <p key={index}>{paragraph}</p>
             ))}
           </div>
