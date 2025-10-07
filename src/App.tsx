@@ -289,7 +289,7 @@ const App: React.FC = () => {
                                 <span>{uiText.loading_older_articles}</span>
                             </div>
                         ) : (
-                            <span className="w-48 block">{uiText.loading_older_articles}</span>
+                            <span className="w-48 block">{uiText.load_older_articles}</span>
                         )}
                     </button>
                 </div>

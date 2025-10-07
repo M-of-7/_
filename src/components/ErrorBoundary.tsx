@@ -49,9 +49,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       );
     }
 
-    // FIX: Destructure `children` from `this.props` to resolve type inference issue.
-    const { children } = this.props;
-    return children; 
+    // FIX: Destructuring `this.props` was causing a type inference issue. Returning `this.props.children` directly resolves it.
+    return this.props.children;
   }
 }
 
