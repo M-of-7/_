@@ -71,14 +71,17 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
         </button>
         <div className="flex-shrink-0">
             {article.imageUrl ? (
-                <img 
-                    src={article.imageUrl} 
-                    alt={article.headline} 
-                    className="w-full h-64 object-cover rounded-t-lg" 
-                    loading="lazy"
-                    width="1280"
-                    height="720"
-                />
+                <picture>
+                  <source srcSet={article.imageUrl.replace(/\.png$/i, '.webp')} type="image/webp" />
+                  <img 
+                      src={article.imageUrl} 
+                      alt={article.headline} 
+                      className="w-full h-64 object-cover rounded-t-lg" 
+                      loading="lazy"
+                      width="1280"
+                      height="720"
+                  />
+                </picture>
             ) : (
                 <div className="w-full h-64 bg-stone-200 animate-pulse rounded-t-lg"></div>
             )}
