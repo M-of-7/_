@@ -30,7 +30,7 @@ function parseJsonFromMarkdown<T>(text: string): T {
     }
 }
 
-// --- هذا هو الكود النهائي الموثوق (النهج المتسلسل) ---
+// --- هذا هو الكود المصحح النهائي مع معالجة JSON الصحيحة ---
 
 async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedHeadline[]> {
     const { date: dateString, language } = payload;
@@ -49,15 +49,17 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
         Ensure the topics are in ${langName}. Do not use markdown.
     `;
 
-    const topicsResponse = await ai.models.generateContent({
+    const topicsResult = await ai.models.generateContent({
         model: TEXT_MODEL,
         contents: topicsPrompt,
         config: {
             tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json", // أعدنا هذا الخيار لأنه مهم للطلب الأول
         },
     });
     
-    const topics = parseJsonFromMarkdown<string[]>(topicsResponse.text);
+    // التصحيح: استدعاء .json() مباشرة
+    const topics = topicsResult.response.candidates[0].content.parts[0].json as string[];
     if (!topics || topics.length === 0) {
         throw new Error("Could not generate news topics.");
     }
@@ -74,15 +76,17 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
             Respond ONLY with a single, valid JSON object without markdown.
         `;
         
-        const detailResponse = await ai.models.generateContent({
+        const detailResult = await ai.models.generateContent({
             model: TEXT_MODEL,
             contents: detailPrompt,
             config: {
                 tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json", // أعدنا هذا الخيار لأنه مهم هنا أيضًا
             },
         });
 
-        const headlineDetails = parseJsonFromMarkdown<UnprocessedHeadline>(detailResponse.text);
+        // التصحيح: استدعاء .json() مباشرة
+        const headlineDetails = detailResult.response.candidates[0].content.parts[0].json as UnprocessedHeadline;
         headlines.push(headlineDetails);
     }
 
