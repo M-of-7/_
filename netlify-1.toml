@@ -1,12 +1,8 @@
-# استخدام Node 20 أثناء البناء والتشغيل
+# يحدد إصدار Node.js لضمان التوافق أثناء بناء الموقع
 [build.environment]
   NODE_VERSION = "20"
 
-# إعدادات وظائف Netlify
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["@google/generative-ai"]
-
-# مهلة وظيفة generateHeadlines
-[functions."generateHeadlines"]
-  timeout = 26
+# يحدد جدول التشغيل لدالة توليد المقالات
+[functions."article-generator"]
+  # هذا التعبير يعني "نفذ هذه الدالة في الدقيقة صفر من كل ساعة"
+  schedule = "0 * * * *"
