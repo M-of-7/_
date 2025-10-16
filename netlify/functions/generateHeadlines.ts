@@ -30,7 +30,7 @@ function parseJsonFromMarkdown<T>(text: string): T {
     }
 }
 
-// --- هذا هو الكود المصحح النهائي مع معالجة JSON الصحيحة ---
+// --- الكود النهائي المجمع الذي يحل مشكلة السرعة والخطأ ---
 
 async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedHeadline[]> {
     const { date: dateString, language } = payload;
@@ -44,22 +44,22 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
     // --- الخطوة الأولى: طلب سريع للحصول على المواضيع الرئيسية فقط ---
     const topicsPrompt = `
         Use Google Search to find 4-5 of the most significant, real news event topics for the date ${dateISO}.
-        Return ONLY a valid JSON array of strings, where each string is a brief topic.
+        Respond ONLY with a valid JSON array of strings, where each string is a brief topic.
         Example: ["US election results", "Major earthquake in Japan", "New iPhone announced"]
         Ensure the topics are in ${langName}. Do not use markdown.
     `;
 
-    const topicsResult = await ai.models.generateContent({
+    const topicsResponse = await ai.models.generateContent({
         model: TEXT_MODEL,
         contents: topicsPrompt,
         config: {
             tools: [{ googleSearch: {} }],
-            responseMimeType: "application/json", // أعدنا هذا الخيار لأنه مهم للطلب الأول
+            // --- تم التأكد من حذف responseMimeType ---
         },
     });
     
-    // التصحيح: استدعاء .json() مباشرة
-    const topics = topicsResult.response.candidates[0].content.parts[0].json as string[];
+    // --- نستخدم دالتك الأصلية والموثوقة للتحليل ---
+    const topics = parseJsonFromMarkdown<string[]>(topicsResponse.text);
     if (!topics || topics.length === 0) {
         throw new Error("Could not generate news topics.");
     }
@@ -76,23 +76,21 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
             Respond ONLY with a single, valid JSON object without markdown.
         `;
         
-        const detailResult = await ai.models.generateContent({
+        const detailResponse = await ai.models.generateContent({
             model: TEXT_MODEL,
             contents: detailPrompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                responseMimeType: "application/json", // أعدنا هذا الخيار لأنه مهم هنا أيضًا
+                // --- تم التأكد من حذف responseMimeType ---
             },
         });
 
-        // التصحيح: استدعاء .json() مباشرة
-        const headlineDetails = detailResult.response.candidates[0].content.parts[0].json as UnprocessedHeadline;
+        const headlineDetails = parseJsonFromMarkdown<UnprocessedHeadline>(detailResponse.text);
         headlines.push(headlineDetails);
     }
 
     return headlines;
 }
-
 // Generates the details for a single article from a headline
 async function handleGenerateArticleDetails(payload: any): Promise<UnprocessedDetails> {
     const { headline, language } = payload;
