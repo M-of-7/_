@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import Header from './components/Header';
 import ArticleCard from './components/ArticleCard';
-import ArticleModal from './components/ArticleModal';
 import LoadingOverlay from './components/LoadingOverlay';
 import MoodFilter from './components/MoodFilter';
 import SpinnerIcon from './components/icons/SpinnerIcon';
@@ -15,6 +14,11 @@ import { useAppStore } from './store/store';
 import { useAuth } from './hooks/useAuth';
 import { useArticles } from './hooks/useArticles';
 import { useAppInitializer } from './hooks/useAppInitializer';
+import ArticleCardSkeleton from './components/ArticleCardSkeleton';
+
+// Lazy load the ArticleModal component for code splitting
+const ArticleModal = lazy(() => import('./components/ArticleModal'));
+
 
 // A new, custom modal component to provide user alerts in a way that is consistent with the app's UI/UX.
 interface AlertModalProps {
@@ -57,6 +61,13 @@ const AlertModal: React.FC<AlertModalProps> = ({ title, body, onClose, confirmTe
     </div>
   );
 };
+
+// A fallback component to display while the ArticleModal's code is loading.
+const ModalLoadingFallback: React.FC = () => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" aria-label="Loading article...">
+    <SpinnerIcon className="w-16 h-16 text-white" />
+  </div>
+);
 
 
 const getFriendlyErrorMessage = (error: any, uiText: typeof UI_TEXT['en']): { title: string, body: string } => {
@@ -205,9 +216,26 @@ const App: React.FC = () => {
     };
 
     const renderContent = () => {
-        if (appStatus === 'initializing' || (isLoading && articles.length === 0)) {
-            const today = new Date().toISOString().split('T')[0];
-            return <LoadingOverlay title={dynamicUiText.fetching_headlines(today)} subtitle={dynamicUiText.contacting_news_desk} />;
+        if (isLoading && articles.length === 0) {
+            return (
+                <div className="container mx-auto p-4 lg:p-6">
+                    <MoodFilter 
+                        language={language}
+                        activeMood={activeMood}
+                        onSelect={() => {}} 
+                        isLoading={true}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <ArticleCardSkeleton isFeatured={true} />
+                        <ArticleCardSkeleton />
+                        <ArticleCardSkeleton />
+                        <ArticleCardSkeleton />
+                        <ArticleCardSkeleton />
+                        <ArticleCardSkeleton />
+                        <ArticleCardSkeleton />
+                    </div>
+                </div>
+            );
         }
 
         if (appStatus === 'error' || (isError && articles.length === 0)) {
@@ -331,13 +359,15 @@ const App: React.FC = () => {
                 {renderContent()}
             </main>
 
-            <ArticleModal 
-                article={selectedArticle} 
-                onClose={() => setSelectedArticle(null)} 
-                language={language}
-                isLoggedIn={!!user}
-                onAddComment={handleAddComment}
-            />
+            <Suspense fallback={<ModalLoadingFallback />}>
+                <ArticleModal 
+                    article={selectedArticle} 
+                    onClose={() => setSelectedArticle(null)} 
+                    language={language}
+                    isLoggedIn={!!user}
+                    onAddComment={handleAddComment}
+                />
+            </Suspense>
 
             {alertInfo && (
                 <AlertModal 

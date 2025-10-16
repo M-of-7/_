@@ -48,7 +48,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
 
   if (!article) return null;
 
-  const { color: viralityColorClass, key: viralityKey } = getViralityStyle(article.viralityDescription);
+  const { color: viralityColorClass, key: viralityKey } = getViralityStyle(article.viralityDescription || '');
   const viralityDisplayText = uiText[viralityKey] || article.viralityDescription;
 
 
@@ -71,7 +71,14 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
         </button>
         <div className="flex-shrink-0">
             {article.imageUrl ? (
-                <img src={article.imageUrl} alt={article.headline} className="w-full h-64 object-cover rounded-t-lg" />
+                <img 
+                    src={article.imageUrl} 
+                    alt={article.headline} 
+                    className="w-full h-64 object-cover rounded-t-lg" 
+                    loading="lazy"
+                    width="1280"
+                    height="720"
+                />
             ) : (
                 <div className="w-full h-64 bg-stone-200 animate-pulse rounded-t-lg"></div>
             )}
@@ -87,7 +94,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
           </div>
           
           <div className="prose max-w-none text-lg text-stone-800 leading-relaxed">
-            {article.body.split('\n').map((paragraph, index) => (
+            {article.body && article.body.split('\n').map((paragraph, index) => (
               paragraph.trim() && <p key={index}>{paragraph}</p>
             ))}
           </div>

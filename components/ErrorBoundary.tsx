@@ -9,7 +9,9 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // FIX: Switched to class property syntax for state initialization. The constructor-based approach was failing type-checking.
+  // FIX: Switched to a class property for state initialization. This resolves
+  // obscure typing issues where 'this.state' and 'this.props' might not be
+  // correctly inferred on the component instance.
   state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
@@ -22,7 +24,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     console.error("Uncaught error in React component tree:", error, errorInfo);
   }
 
-  render() {
+  // FIX: Add explicit return type to the render method to aid type inference.
+  render(): React.ReactNode {
     if (this.state.hasError) {
       const isRTL = document.documentElement.dir === 'rtl';
       // You can render any custom fallback UI
@@ -49,7 +52,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       );
     }
 
-    // FIX: Destructuring `this.props` was causing a type inference issue. Returning `this.props.children` directly resolves it.
     return this.props.children;
   }
 }

@@ -38,7 +38,14 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
       <div className="relative h-48 w-full overflow-hidden">
         {article.imageUrl ? (
             <>
-                <img src={article.imageUrl} alt={article.headline} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <img 
+                  src={article.imageUrl} 
+                  alt={article.headline} 
+                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                  width="1280"
+                  height="720"
+                />
                 <div className="absolute inset-0 bg-black/40"></div>
             </>
         ) : (

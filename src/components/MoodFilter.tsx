@@ -6,9 +6,10 @@ interface MoodFilterProps {
   language: Language;
   activeMood: string;
   onSelect: (moodKey: string, moodLabel: string) => void;
+  isLoading?: boolean;
 }
 
-const MoodFilter: React.FC<MoodFilterProps> = ({ language, activeMood, onSelect }) => {
+const MoodFilter: React.FC<MoodFilterProps> = ({ language, activeMood, onSelect, isLoading = false }) => {
   const filters = MOOD_FILTERS[language];
   const promptText = UI_TEXT[language].mood_filter_prompt;
 
@@ -21,11 +22,13 @@ const MoodFilter: React.FC<MoodFilterProps> = ({ language, activeMood, onSelect 
             <button
               key={filter.key}
               onClick={() => onSelect(filter.key, filter.label)}
+              disabled={isLoading}
               className={`
                 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-200
                 ${activeMood === filter.key 
                   ? 'bg-stone-800 text-white shadow' 
                   : 'bg-stone-200 text-stone-700 hover:bg-stone-300'}
+                ${isLoading ? 'cursor-not-allowed opacity-60' : ''}
               `}
             >
               {filter.label}

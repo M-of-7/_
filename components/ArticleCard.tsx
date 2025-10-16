@@ -20,8 +20,8 @@ const getViralityStyle = (description: string): { color: string; key: 'fast_spre
 };
 
 const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, categoryText, uiText, isFeatured = false }) => {
-  const bodySnippet = article.body.split('\n')[0].substring(0, isFeatured ? 200 : 100) + '...';
-  const { color: viralityColorClass, key: viralityKey } = getViralityStyle(article.viralityDescription);
+  const bodySnippet = article.body ? article.body.split('\n')[0].substring(0, isFeatured ? 200 : 100) + '...' : '';
+  const { color: viralityColorClass, key: viralityKey } = getViralityStyle(article.viralityDescription || '');
   const viralityDisplayText = uiText[viralityKey] || article.viralityDescription;
   const isRTL = document.documentElement.dir === 'rtl';
 
@@ -40,7 +40,14 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
       <div className="relative h-48 w-full overflow-hidden">
         {article.imageUrl ? (
             <>
-                <img src={article.imageUrl} alt={article.headline} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <img 
+                    src={article.imageUrl} 
+                    alt={article.headline} 
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                    loading="lazy"
+                    width="1280"
+                    height="720"
+                />
                 <div className="absolute inset-0 bg-black/40"></div>
             </>
         ) : (
