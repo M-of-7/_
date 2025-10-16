@@ -30,8 +30,8 @@ function parseJsonFromMarkdown<T>(text: string): T {
     }
 }
 
+// --- استبدل الدالة القديمة بهذه الدالة الجديدة والمحسنة ---
 
-// Generates a list of headlines for a given day.
 async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedHeadline[]> {
     const { date: dateString, language } = payload;
     if (!dateString || !language) throw new Error('Missing date or language in payload.');
@@ -41,30 +41,60 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
     const dateISO = date.toISOString().split('T')[0];
     const langName = language === 'ar' ? 'Arabic' : 'English';
 
-    const prompt = `
-        Act as a news agency editor for the date ${dateISO}.
-        Your task is to generate a diverse array of 4-5 compelling headlines for real news events in ${langName}.
-        Use Google Search to find real, significant news events that occurred on this specific date.
-        Each object in the JSON array must have the following structure:
-        - headline: A compelling headline.
-        - category: One of the following: ${CATEGORIES.join(', ')}.
-        - imagePrompt: A descriptive prompt for an AI image generator to create a realistic photo for this article.
-        
-        Ensure all text content is in ${langName}.
-        Respond ONLY with a valid JSON array of these objects. Do not include markdown formatting.
+    // --- الخطوة الأولى: طلب سريع للحصول على المواضيع الرئيسية فقط ---
+    const topicsPrompt = `
+        Use Google Search to find 4-5 of the most significant, real news event topics for the date ${dateISO}.
+        Return ONLY a valid JSON array of strings, where each string is a brief topic.
+        Example: ["US election results", "Major earthquake in Japan", "New iPhone announced"]
+        Ensure the topics are in ${langName}.
     `;
-    
-    const response = await ai.models.generateContent({
+
+    const topicsResponse = await ai.models.generateContent({
         model: TEXT_MODEL,
-        contents: prompt,
+        contents: topicsPrompt,
         config: {
             tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json",
         },
     });
+    
+    const topics = JSON.parse(topicsResponse.text) as string[];
+    if (!topics || topics.length === 0) {
+        throw new Error("Could not generate news topics.");
+    }
 
-    return parseJsonFromMarkdown<UnprocessedHeadline[]>(response.text);
+    // --- الخطوة الثانية: إنشاء طلب تفاصيل لكل موضوع ---
+    const detailPromises = topics.map(topic => {
+        const detailPrompt = `
+            For the news topic "${topic}" on date ${dateISO}, act as a news editor.
+            Generate a single JSON object with the following structure:
+            - "headline": A compelling headline in ${langName}.
+            - "category": One of these: ${CATEGORIES.join(', ')}.
+            - "imagePrompt": A descriptive prompt for an AI image generator to create a realistic photo for this article.
+            Respond ONLY with a single, valid JSON object.
+        `;
+        
+        // Return the promise
+        return ai.models.generateContent({
+            model: TEXT_MODEL,
+            contents: detailPrompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+            },
+        });
+    });
+
+    // --- الخطوة الثالثة: تشغيل جميع طلبات التفاصيل بالتوازي ---
+    const detailResponses = await Promise.all(detailPromises);
+
+    // --- الخطوة الرابعة: تجميع النتائج ---
+    const headlines = detailResponses.map(res => {
+        return JSON.parse(res.text) as UnprocessedHeadline;
+    });
+
+    return headlines;
 }
-
 
 // Generates the details for a single article from a headline
 async function handleGenerateArticleDetails(payload: any): Promise<UnprocessedDetails> {
