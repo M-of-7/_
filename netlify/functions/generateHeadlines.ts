@@ -30,7 +30,7 @@ function parseJsonFromMarkdown<T>(text: string): T {
     }
 }
 
-// --- هذا هو الكود الصحيح والنهائي ---
+// --- هذا هو الكود النهائي الموثوق (النهج المتسلسل) ---
 
 async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedHeadline[]> {
     const { date: dateString, language } = payload;
@@ -54,18 +54,17 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
         contents: topicsPrompt,
         config: {
             tools: [{ googleSearch: {} }],
-            // تم حذف responseMimeType من هنا
         },
     });
     
-    // سنستخدم دالة التحليل القديمة للتعامل مع أي احتمالات
     const topics = parseJsonFromMarkdown<string[]>(topicsResponse.text);
     if (!topics || topics.length === 0) {
         throw new Error("Could not generate news topics.");
     }
 
-    // --- الخطوة الثانية: إنشاء طلب تفاصيل لكل موضوع ---
-    const detailPromises = topics.map(topic => {
+    // --- الخطوة الثانية: طلب تفاصيل كل موضوع واحدًا تلو الآخر ---
+    const headlines: UnprocessedHeadline[] = [];
+    for (const topic of topics) {
         const detailPrompt = `
             For the news topic "${topic}" on date ${dateISO}, act as a news editor.
             Generate a single JSON object with the following structure:
@@ -75,23 +74,17 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
             Respond ONLY with a single, valid JSON object without markdown.
         `;
         
-        return ai.models.generateContent({
+        const detailResponse = await ai.models.generateContent({
             model: TEXT_MODEL,
             contents: detailPrompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                // تم حذف responseMimeType من هنا
             },
         });
-    });
 
-    // --- الخطوة الثالثة: تشغيل جميع طلبات التفاصيل بالتوازي ---
-    const detailResponses = await Promise.all(detailPromises);
-
-    // --- الخطوة الرابعة: تجميع النتائج ---
-    const headlines = detailResponses.map(res => {
-        return parseJsonFromMarkdown<UnprocessedHeadline>(res.text);
-    });
+        const headlineDetails = parseJsonFromMarkdown<UnprocessedHeadline>(detailResponse.text);
+        headlines.push(headlineDetails);
+    }
 
     return headlines;
 }
