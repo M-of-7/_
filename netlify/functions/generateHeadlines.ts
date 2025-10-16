@@ -30,7 +30,7 @@ function parseJsonFromMarkdown<T>(text: string): T {
     }
 }
 
-// --- استبدل الدالة القديمة بهذه الدالة الجديدة والمحسنة ---
+// --- هذا هو الكود الصحيح والنهائي ---
 
 async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedHeadline[]> {
     const { date: dateString, language } = payload;
@@ -46,7 +46,7 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
         Use Google Search to find 4-5 of the most significant, real news event topics for the date ${dateISO}.
         Return ONLY a valid JSON array of strings, where each string is a brief topic.
         Example: ["US election results", "Major earthquake in Japan", "New iPhone announced"]
-        Ensure the topics are in ${langName}.
+        Ensure the topics are in ${langName}. Do not use markdown.
     `;
 
     const topicsResponse = await ai.models.generateContent({
@@ -54,11 +54,12 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
         contents: topicsPrompt,
         config: {
             tools: [{ googleSearch: {} }],
-            responseMimeType: "application/json",
+            // تم حذف responseMimeType من هنا
         },
     });
     
-    const topics = JSON.parse(topicsResponse.text) as string[];
+    // سنستخدم دالة التحليل القديمة للتعامل مع أي احتمالات
+    const topics = parseJsonFromMarkdown<string[]>(topicsResponse.text);
     if (!topics || topics.length === 0) {
         throw new Error("Could not generate news topics.");
     }
@@ -71,16 +72,15 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
             - "headline": A compelling headline in ${langName}.
             - "category": One of these: ${CATEGORIES.join(', ')}.
             - "imagePrompt": A descriptive prompt for an AI image generator to create a realistic photo for this article.
-            Respond ONLY with a single, valid JSON object.
+            Respond ONLY with a single, valid JSON object without markdown.
         `;
         
-        // Return the promise
         return ai.models.generateContent({
             model: TEXT_MODEL,
             contents: detailPrompt,
             config: {
                 tools: [{ googleSearch: {} }],
-                responseMimeType: "application/json",
+                // تم حذف responseMimeType من هنا
             },
         });
     });
@@ -90,7 +90,7 @@ async function handleGenerateHeadlinesForDay(payload: any): Promise<UnprocessedH
 
     // --- الخطوة الرابعة: تجميع النتائج ---
     const headlines = detailResponses.map(res => {
-        return JSON.parse(res.text) as UnprocessedHeadline;
+        return parseJsonFromMarkdown<UnprocessedHeadline>(res.text);
     });
 
     return headlines;
