@@ -17,13 +17,13 @@ const db = getFirestore();
 export const handler: Handler = async () => {
   try {
     const articlesRef = db.collection('articles');
-    // جلب أحدث 5 مقالات
     const snapshot = await articlesRef.orderBy('createdAt', 'desc').limit(5).get();
 
     if (snapshot.empty) {
       return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'No articles found.' }),
+        statusCode: 200, // نرجع 200 مع مصفوفة فارغة بدلاً من خطأ
+        body: JSON.stringify([]),
+        headers: { 'Content-Type': 'application/json' },
       };
     }
 
@@ -38,11 +38,15 @@ export const handler: Handler = async () => {
       body: JSON.stringify(articles),
     };
 
-  } catch (error) {
+  } catch (error: any) { // تم تحسين معالجة الأخطاء هنا
     console.error("Error fetching articles:", error);
+    
+    // هذا الجزء هو المهم: نرجع رسالة الخطأ الأصلية من Firestore
+    const errorMessage = error.details || error.message || 'Failed to fetch articles.';
+    
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch articles.' }),
+      body: JSON.stringify({ error: errorMessage }),
     };
   }
 };
