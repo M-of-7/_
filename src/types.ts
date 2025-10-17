@@ -10,7 +10,6 @@ export interface Article {
   headline: string;
   byline?: string;
   date: string; // ISO 8601 format for sorting
-  dayLabel: string; // e.g., "Today", "Yesterday", "October 29"
   body?: string;
   imageUrl: string;
   imagePrompt: string;
@@ -39,7 +38,6 @@ export type Language = 'en' | 'ar';
 
 export interface DailyBriefing {
     date: string; // ISO 8601 format
-    dayLabel: string;
     headlines: {
         topic: string;
         category: Category;

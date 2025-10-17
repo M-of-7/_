@@ -95,6 +95,11 @@ const getFriendlyErrorMessage = (error: any, uiText: typeof UI_TEXT['en']): { ti
 };
 
 const App: React.FC = () => {
+    // Hydrate from local storage on initial app load
+    useEffect(() => {
+        useAppStore.getState().hydrateFromLocalStorage();
+    }, []);
+
     // State from Zustand store
     const { 
         language,

@@ -1,7 +1,8 @@
 import React from 'react';
-import type { Article } from '../types';
+import type { Article, Language } from '../types';
 import { UI_TEXT } from '../constants';
 import TrendingUpIcon from './icons/TrendingUpIcon';
+import { getDayLabel } from '../services/utils';
 
 interface ArticleCardProps {
   article: Article;
@@ -22,6 +23,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
   const { color: viralityColorClass, key: viralityKey } = getViralityStyle(article.viralityDescription || '');
   const viralityDisplayText = uiText[viralityKey] || article.viralityDescription;
   const isRTL = document.documentElement.dir === 'rtl';
+  const language = document.documentElement.lang as Language;
+  const dayLabel = getDayLabel(new Date(article.date), language);
 
   const cardClasses = `
     ${isFeatured ? 'md:col-span-2 lg:col-span-2 xl:col-span-2' : 'col-span-1'}
@@ -66,7 +69,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
             {article.headline}
         </h2>
         <div className="flex items-center gap-2 text-xs text-stone-500 mt-1 mb-2">
-          <span>{article.byline} - {article.dayLabel}</span>
+          <span>{article.byline} - {dayLabel}</span>
           <div title={uiText.virality_tooltip} className={`flex items-center gap-1 font-bold ${viralityColorClass}`}>
             <TrendingUpIcon className="w-4 h-4" color="currentColor" />
             <span>{viralityDisplayText}</span>

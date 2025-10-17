@@ -15,7 +15,6 @@ export const MOCK_ARTICLES: { [key: string]: Article[] } = {
       headline: 'إطلاق قمر صناعي جديد لرصد تغير المناخ بدقة غير مسبوقة',
       byline: 'وكالة الفضاء الدولية',
       date: todayISO,
-      dayLabel: 'اليوم',
       body: 'أعلنت وكالة الفضاء الدولية اليوم عن إطلاق القمر الصناعي "عين الأرض ٣"، الذي يهدف إلى مراقبة التغيرات المناخية وتأثيراتها على كوكبنا.\nالجهاز الجديد مزود بأجهزة استشعار متطورة قادرة على قياس مستويات ثاني أكسيد الكربون ودرجات حرارة المحيطات بدقة لم يسبق لها مثيل، مما سيوفر للعلماء بيانات حيوية لفهم أزمة المناخ بشكل أفضل.',
       imageUrl: 'https://picsum.photos/seed/space-ar/1280/720',
       // FIX: Added missing imagePrompt property.
@@ -30,7 +29,6 @@ export const MOCK_ARTICLES: { [key: string]: Article[] } = {
       headline: 'اكتشافات أثرية مذهلة تغير فهمنا للتاريخ القديم',
       byline: 'قسم الآثار الوطني',
       date: todayISO,
-      dayLabel: 'اليوم',
       body: 'كشف فريق من علماء الآثار عن مدينة قديمة كانت مدفونة تحت الرمال لآلاف السنين. تحتوي المدينة على مبانٍ سليمة وأدوات فنية متقنة، مما يشير إلى وجود حضارة متقدمة لم تكن معروفة من قبل.\nهذا الاكتشاف قد يعيد كتابة فصول كاملة من تاريخ المنطقة، ويقدم رؤى جديدة حول كيفية عيش المجتمعات القديمة وتفاعلها.',
       imageUrl: 'https://picsum.photos/seed/ruins-ar/1280/720',
       // FIX: Added missing imagePrompt property.
@@ -45,7 +43,6 @@ export const MOCK_ARTICLES: { [key: string]: Article[] } = {
       headline: 'فريق كرة السلة المحلي يفوز بالبطولة في اللحظات الأخيرة',
       byline: 'القسم الرياضي',
       date: yesterdayISO,
-      dayLabel: 'الأمس',
       body: 'في مباراة مثيرة حبست الأنفاس، تمكن فريق "صقور المدينة" من تحقيق فوز دراماتيكي على منافسه التقليدي بنتيجة ٩٨-٩٧. جاء الفوز بفضل رمية ثلاثية في الثانية الأخيرة من عمر المباراة، مما أدى إلى تتويج الفريق بلقب البطولة للمرة الأولى منذ عشر سنوات.',
       imageUrl: 'https://picsum.photos/seed/basketball-ar/1280/720',
       // FIX: Added missing imagePrompt property.
@@ -62,7 +59,6 @@ export const MOCK_ARTICLES: { [key: string]: Article[] } = {
       headline: 'New Satellite Launched to Monitor Climate Change with Unprecedented Accuracy',
       byline: 'International Space Agency',
       date: todayISO,
-      dayLabel: 'Today',
       body: 'The International Space Agency announced today the launch of the "Earth Eye 3" satellite, aimed at monitoring climate change and its effects on our planet.\nThe new device is equipped with advanced sensors capable of measuring carbon dioxide levels and ocean temperatures with unparalleled precision, which will provide scientists with vital data to better understand the climate crisis.',
       imageUrl: 'https://picsum.photos/seed/space-en/1280/720',
       // FIX: Added missing imagePrompt property.
@@ -77,7 +73,6 @@ export const MOCK_ARTICLES: { [key: string]: Article[] } = {
       headline: 'Stunning Archaeological Find Changes Understanding of Ancient History',
       byline: 'National Antiquities Dept.',
       date: todayISO,
-      dayLabel: 'Today',
       body: 'A team of archaeologists has uncovered an ancient city that was buried under sand for thousands of years. The city contains intact buildings and elaborate artifacts, suggesting an advanced civilization previously unknown.\nThis discovery could rewrite entire chapters of the region\'s history, offering new insights into how ancient societies lived and interacted.',
       imageUrl: 'https://picsum.photos/seed/ruins-en/1280/720',
       // FIX: Added missing imagePrompt property.
@@ -92,7 +87,6 @@ export const MOCK_ARTICLES: { [key: string]: Article[] } = {
       headline: 'Local Basketball Team Wins Championship with Last-Second Shot',
       byline: 'Sports Desk',
       date: yesterdayISO,
-      dayLabel: 'Yesterday',
       body: 'In a thrilling game that went down to the wire, the "City Falcons" secured a dramatic 98-97 victory over their rivals. The win came from a three-point shot in the final second of the game, crowning the team as champions for the first time in a decade.',
       imageUrl: 'https://picsum.photos/seed/basketball-en/1280/720',
       // FIX: Added missing imagePrompt property.

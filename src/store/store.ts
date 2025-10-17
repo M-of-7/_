@@ -4,11 +4,25 @@ import type { User } from '../services/authService';
 
 type AppStatus = 'initializing' | 'ready' | 'error';
 
+const LOCAL_STORAGE_KEY = 'suhf-articles-cache';
+
 // Helper function to sort articles by date descending, preventing mutation.
 const sortArticles = (articles: Article[]): Article[] => {
   return [...articles].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
+// Helper to save articles to local storage
+const saveToLocalStorage = (articles: Article[]) => {
+    try {
+        // Only cache articles with text content. This avoids caching shells.
+        const articlesWithContent = articles.filter(a => a.body);
+        if (articlesWithContent.length > 0) {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(articlesWithContent));
+        }
+    } catch (e) {
+        console.error("Failed to save articles to local storage", e);
+    }
+};
 
 interface AppState {
   language: Language;
@@ -22,6 +36,7 @@ interface AppState {
   activeTopic: string;
   
   // Actions
+  hydrateFromLocalStorage: () => void;
   setLanguage: (language: Language) => void;
   setAppStatus: (status: AppStatus, error?: string | null) => void;
   setLoadingMessage: (title: string, subtitle: string) => void;
@@ -48,34 +63,63 @@ export const useAppStore = create<AppState>((set) => ({
   activeTopic: 'all',
   
   // Actions
-  setLanguage: (language) => set({ 
-    language, 
-    articles: [], 
-    initialTodayHeadlines: [], 
-    isNewEditionAvailable: false,
-    appStatus: 'initializing', // Trigger re-initialization
-    activeTopic: 'all',
-  }),
+  hydrateFromLocalStorage: () => {
+    try {
+        const cachedArticlesJson = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (cachedArticlesJson) {
+            const cachedArticles = JSON.parse(cachedArticlesJson);
+            // Basic validation to ensure it's an array
+            if (Array.isArray(cachedArticles)) {
+                set({ articles: sortArticles(cachedArticles) });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load or parse articles from local storage", e);
+        localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear potentially corrupted data
+    }
+  },
+  setLanguage: (language) => {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    set({ 
+      language, 
+      articles: [], 
+      initialTodayHeadlines: [], 
+      isNewEditionAvailable: false,
+      appStatus: 'initializing', // Trigger re-initialization
+      activeTopic: 'all',
+    })
+  },
   setAppStatus: (status, error = null) => set({ appStatus: status, errorMessage: error }),
   setLoadingMessage: (title, subtitle) => set({ loadingMessage: { title, subtitle } }),
-  setArticles: (articles) => set({
-    articles: sortArticles(articles)
+  setArticles: (articles) => {
+    const sorted = sortArticles(articles);
+    saveToLocalStorage(sorted);
+    set({ articles: sorted });
+  },
+  addArticles: (newArticles) => set(state => {
+    const sorted = sortArticles([...state.articles, ...newArticles]);
+    saveToLocalStorage(sorted);
+    return { articles: sorted };
   }),
-  addArticles: (newArticles) => set(state => ({
-    articles: sortArticles([...state.articles, ...newArticles])
-  })),
   updateArticle: (updatedArticle) => set(state => {
     const articlesMap = new Map<string, Article>(state.articles.map(a => [a.id, a]));
     articlesMap.set(updatedArticle.id, updatedArticle);
+    const sorted = sortArticles(Array.from(articlesMap.values()));
+    saveToLocalStorage(sorted);
     return {
-        articles: sortArticles(Array.from(articlesMap.values()))
+        articles: sorted
     };
   }),
   updateMultipleArticles: (updatedArticles) => set(state => {
       const articlesMap = new Map<string, Article>(state.articles.map(a => [a.id, a]));
-      updatedArticles.forEach(updated => articlesMap.set(updated.id, updated));
+      updatedArticles.forEach(updated => {
+          const existing = articlesMap.get(updated.id) || {};
+          articlesMap.set(updated.id, { ...existing, ...updated });
+      });
+      const sorted = sortArticles(Array.from(articlesMap.values()));
+      saveToLocalStorage(sorted);
       return {
-          articles: sortArticles(Array.from(articlesMap.values()))
+          articles: sorted
       };
   }),
   setUser: (user) => set({ user }),

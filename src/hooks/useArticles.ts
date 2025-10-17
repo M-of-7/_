@@ -22,24 +22,6 @@ const generateArticleId = (date: string, headline: string): string => {
   return `${datePart}-${headlineHash}`;
 };
 
-const getDayLabel = (date: Date, language: Language) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    
-    const dateOnly = new Date(date);
-    dateOnly.setHours(0,0,0,0);
-
-    if (dateOnly.getTime() === today.getTime()) {
-        return language === 'ar' ? 'اليوم' : 'Today';
-    }
-    if (dateOnly.getTime() === yesterday.getTime()) {
-        return language === 'ar' ? 'الأمس' : 'Yesterday';
-    }
-    return new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
-};
-
 // Concurrency settings for performance tuning
 const MAX_CONCURRENT_DETAIL_JOBS = 4; // Fetch text content faster
 const MAX_CONCURRENT_IMAGE_JOBS = 2; // Generate images in the background without overwhelming the API
@@ -77,7 +59,6 @@ const fetchArticlesForDay = async (date: Date, language: Language, topic: string
         category: h.category,
         imagePrompt: h.imagePrompt,
         date: date.toISOString(),
-        dayLabel: getDayLabel(date, language),
         imageUrl: '',
         comments: [],
     }));
