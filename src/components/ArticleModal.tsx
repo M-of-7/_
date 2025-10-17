@@ -43,6 +43,13 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
       window.removeEventListener('keydown', handleEsc);
     };
   }, [article, onClose]);
+  
+  const formattedDate = useMemo(() => {
+    if (!article?.date) return '';
+    const date = new Date(article.date);
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', options).format(date);
+  }, [article?.date, language]);
 
   if (!article) return null;
 
@@ -87,7 +94,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
         <div className="flex-1 overflow-y-auto p-6 lg:p-8">
           <h1 id={`modal-headline-${article.id}`} className={`text-3xl lg:text-4xl font-bold text-stone-900 mb-2 ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{article.headline}</h1>
           <div className="flex items-center mb-6 gap-3 text-stone-600">
-            <span>{article.byline} &bull; {article.date}</span>
+            <span>{article.byline} &bull; {formattedDate}</span>
             <div title={uiText.virality_tooltip} className={`flex items-center gap-1 font-bold ${viralityColorClass}`}>
               <TrendingUpIcon className="w-5 h-5" color="currentColor" />
               <span>{viralityDisplayText}</span>

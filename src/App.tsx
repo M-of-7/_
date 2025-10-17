@@ -154,13 +154,6 @@ const App: React.FC = () => {
         }
         return articles;
     }, [articles, searchQuery]);
-    
-    const groupedArticles: Record<string, Article[]> = useMemo(() => {
-        return filteredArticles.reduce((acc: Record<string, Article[]>, article) => {
-            (acc[article.dayLabel] = acc[article.dayLabel] || []).push(article);
-            return acc;
-        }, {});
-    }, [filteredArticles]);
 
     const handleAddComment = (articleId: string, commentText: string) => {
         if (!user) return;
@@ -249,38 +242,27 @@ const App: React.FC = () => {
                   activeTopic={activeTopic}
                   onSelect={handleTopicSelect}
               />
-              {Object.entries(groupedArticles).length === 0 && !isLoading && (
+              {filteredArticles.length === 0 && !isLoading ? (
                    <div className="col-span-full flex items-center justify-center py-20">
                        <p className="text-2xl text-stone-500">No articles found for this topic.</p>
                    </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredArticles.map((item, index) => {
+                        const isFeatured = index === 0 && !searchQuery && activeTopic === 'all' && filteredArticles.length > 3;
+                        return (
+                            <ArticleCard 
+                                key={item.id}
+                                article={item}
+                                onReadMore={setSelectedArticle}
+                                categoryText={CATEGORY_MAP[language][item.category] || item.category}
+                                uiText={uiText}
+                                isFeatured={isFeatured}
+                            />
+                        );
+                    })}
+                </div>
               )}
-              {Object.entries(groupedArticles).map(([dayLabel, dayArticles]) => (
-                  <div key={dayLabel}>
-                      <div className="relative mt-8 mb-4">
-                          <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                              <div className="w-full border-t border-stone-300" />
-                          </div>
-                          <div className="relative flex justify-center">
-                              <span className="bg-stone-100 px-3 text-lg font-medium text-stone-700">{dayLabel}</span>
-                          </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                          {dayArticles.map((item, index) => {
-                              const isFeatured = index === 0 && !searchQuery && activeTopic === 'all' && dayArticles.length > 3;
-                              return (
-                                <ArticleCard 
-                                  key={item.id}
-                                  article={item}
-                                  onReadMore={setSelectedArticle}
-                                  categoryText={CATEGORY_MAP[language][item.category] || item.category}
-                                  uiText={uiText}
-                                  isFeatured={isFeatured}
-                                />
-                              );
-                          })}
-                      </div>
-                  </div>
-              ))}
               {hasNextPage && (
                 <div className="flex justify-center my-8">
                     <button
