@@ -49,17 +49,26 @@ const MAX_CONCURRENT_IMAGE_JOBS = 2; // Generate images in the background withou
  * If articles aren't in the cache, it generates headlines, creates shell articles,
  * and saves them to the cache before returning them.
  */
-const fetchArticlesForDay = async (date: Date, language: Language): Promise<Article[]> => {
+const fetchArticlesForDay = async (date: Date, language: Language, topic: string): Promise<Article[]> => {
     const dateStr = date.toISOString().split('T')[0];
 
     // 1. Check cache for existing articles (shell or full)
     const cachedArticles = await firestoreService.getArticlesForDay(dateStr, language);
     if (cachedArticles && cachedArticles.length > 0) {
-        return cachedArticles;
+        // If a specific topic is requested, filter cached articles.
+        // If 'all' is requested, return all articles for that day.
+        if (topic !== 'all') {
+            const topicArticles = cachedArticles.filter(a => a.category.toLowerCase() === topic.toLowerCase());
+            // If we have enough articles for the topic in cache, return them.
+            // Otherwise, we might still want to fetch new ones. For simplicity, we return what we have.
+            if (topicArticles.length > 0) return topicArticles;
+        } else {
+             return cachedArticles;
+        }
     }
 
-    // 2. Cache miss: generate new headlines from Gemini
-    const unprocessedHeadlines = await generateHeadlinesForDay(date, language);
+    // 2. Cache miss or insufficient topic articles: generate new headlines from Gemini
+    const unprocessedHeadlines = await generateHeadlinesForDay(date, language, topic);
 
     // 3. Create shell articles from the new headlines
     const shellArticles: Article[] = unprocessedHeadlines.map(h => ({
@@ -74,7 +83,6 @@ const fetchArticlesForDay = async (date: Date, language: Language): Promise<Arti
     }));
 
     // 4. Save shell articles to Firestore cache to prevent re-generation on refresh.
-    // This is done asynchronously and not awaited to return faster to the UI.
     if (shellArticles.length > 0) {
         firestoreService.syncArticlesBatch(shellArticles);
     }
@@ -95,6 +103,7 @@ export const useArticles = () => {
         setInitialTodayHeadlines,
         setIsNewEditionAvailable,
         initialTodayHeadlines,
+        activeTopic,
     } = useAppStore();
     const queryClient = useQueryClient();
 
@@ -112,8 +121,8 @@ export const useArticles = () => {
 
     // Query for today's articles. It will now fetch from cache or generate.
     const { data: todayArticlesData, isLoading: isLoadingToday, isError: isErrorToday, error: todayError } = useQuery({
-        queryKey: ['articles', today.toISOString().split('T')[0], language],
-        queryFn: () => fetchArticlesForDay(today, language),
+        queryKey: ['articles', today.toISOString().split('T')[0], language, activeTopic],
+        queryFn: () => fetchArticlesForDay(today, language, activeTopic),
         enabled: appStatus === 'ready',
         refetchInterval: 60 * 1000,
     });
@@ -121,14 +130,14 @@ export const useArticles = () => {
     
     // Logic to detect if a new edition is available by comparing headlines
     useEffect(() => {
-        if (todayArticles.length > 0 && initialTodayHeadlines.length > 0) {
+        if (todayArticles.length > 0 && initialTodayHeadlines.length > 0 && activeTopic === 'all') {
             const latestHeadlines = new Set(todayArticles.map(a => a.headline));
             const currentHeadlines = new Set(initialTodayHeadlines);
              if (latestHeadlines.size > 0 && (latestHeadlines.size !== currentHeadlines.size || ![...latestHeadlines].every(h => currentHeadlines.has(h)))) {
                 setIsNewEditionAvailable(true);
             }
         }
-    }, [todayArticles, initialTodayHeadlines, setIsNewEditionAvailable]);
+    }, [todayArticles, initialTodayHeadlines, setIsNewEditionAvailable, activeTopic]);
 
     // Infinite query for older articles, also using the caching mechanism
     const {
@@ -140,11 +149,11 @@ export const useArticles = () => {
         isError: isErrorOlder,
         error: olderError
     } = useInfiniteQuery({
-        queryKey: ['articles', 'older', language],
+        queryKey: ['articles', 'older', language, activeTopic],
         queryFn: ({ pageParam }) => {
             const date = new Date(today);
             date.setDate(today.getDate() - pageParam);
-            return fetchArticlesForDay(date, language);
+            return fetchArticlesForDay(date, language, activeTopic);
         },
         initialPageParam: 1,
         getNextPageParam: (_, allPages) => {
@@ -170,12 +179,12 @@ export const useArticles = () => {
             const newArticleList = Array.from(articlesMap.values());
             updateMultipleArticles(newArticleList);
 
-            if (initialTodayHeadlines.length === 0 && todayArticles.length > 0) {
+            if (initialTodayHeadlines.length === 0 && todayArticles.length > 0 && activeTopic === 'all') {
                 setInitialTodayHeadlines(todayArticles.map(a => a.headline));
             }
         }
 
-    }, [todayArticles, olderArticlesPages, updateMultipleArticles]);
+    }, [todayArticles, olderArticlesPages, updateMultipleArticles, activeTopic]);
 
 
     // Effect to process shell articles (fetching details only)

@@ -26,8 +26,8 @@ async function callGeminiApi(action: string, payload: object) {
 /**
  * Generates a list of headlines for a given day. This is a lightweight call designed to be fast.
  */
-export const generateHeadlinesForDay = async (date: Date, language: Language): Promise<UnprocessedHeadline[]> => {
-    return callGeminiApi('generateHeadlinesForDay', { date: date.toISOString(), language });
+export const generateHeadlinesForDay = async (date: Date, language: Language, topic: string): Promise<UnprocessedHeadline[]> => {
+    return callGeminiApi('generateHeadlinesForDay', { date: date.toISOString(), language, topic });
 };
 
 /**
@@ -49,22 +49,5 @@ export const generateArticleImage = async (prompt: string): Promise<string> => {
         console.error("Image generation failed for prompt:", prompt, error);
         // Return a placeholder on failure to prevent UI from breaking
         return `https://picsum.photos/seed/${encodeURIComponent(prompt)}/1280/720`;
-    }
-};
-
-/**
- * Filters headlines by mood by calling the backend proxy.
- */
-export const filterHeadlinesByMood = async (headlines: {id: string, text: string}[], mood: string, language: Language): Promise<string[]> => {
-    if (mood === 'all') return headlines.map(h => h.id);
-    
-    try {
-        return await callGeminiApi('filterHeadlines', { headlines, mood, language });
-    } catch (error) {
-        console.error(`Failed to filter headlines for mood '${mood}'`, error);
-        // Fallback: return a random subset to avoid a broken UI state
-        const shuffled = [...headlines].sort(() => 0.5 - Math.random());
-        const count = Math.max(2, Math.floor(shuffled.length / 2));
-        return shuffled.slice(0, count).map(h => h.id);
     }
 };

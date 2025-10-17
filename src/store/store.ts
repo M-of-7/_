@@ -19,6 +19,7 @@ interface AppState {
   user: User | null;
   isNewEditionAvailable: boolean;
   initialTodayHeadlines: string[];
+  activeTopic: string;
   
   // Actions
   setLanguage: (language: Language) => void;
@@ -31,6 +32,7 @@ interface AppState {
   setUser: (user: User | null) => void;
   setIsNewEditionAvailable: (isAvailable: boolean) => void;
   setInitialTodayHeadlines: (headlines: string[]) => void;
+  setActiveTopic: (topic: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -43,6 +45,7 @@ export const useAppStore = create<AppState>((set) => ({
   user: null,
   isNewEditionAvailable: false,
   initialTodayHeadlines: [],
+  activeTopic: 'all',
   
   // Actions
   setLanguage: (language) => set({ 
@@ -50,7 +53,8 @@ export const useAppStore = create<AppState>((set) => ({
     articles: [], 
     initialTodayHeadlines: [], 
     isNewEditionAvailable: false,
-    appStatus: 'initializing' // Trigger re-initialization
+    appStatus: 'initializing', // Trigger re-initialization
+    activeTopic: 'all',
   }),
   setAppStatus: (status, error = null) => set({ appStatus: status, errorMessage: error }),
   setLoadingMessage: (title, subtitle) => set({ loadingMessage: { title, subtitle } }),
@@ -77,4 +81,11 @@ export const useAppStore = create<AppState>((set) => ({
   setUser: (user) => set({ user }),
   setIsNewEditionAvailable: (isAvailable) => set({ isNewEditionAvailable: isAvailable }),
   setInitialTodayHeadlines: (headlines) => set({ initialTodayHeadlines: headlines }),
+  setActiveTopic: (topic) => set(state => {
+    // Invalidate articles if topic changes to force a full refetch
+    if (state.activeTopic !== topic) {
+      return { activeTopic: topic, articles: [] };
+    }
+    return { activeTopic: topic };
+  }),
 }));

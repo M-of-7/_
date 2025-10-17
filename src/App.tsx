@@ -5,7 +5,6 @@ import LoadingOverlay from './components/LoadingOverlay';
 import MoodFilter from './components/MoodFilter';
 import SpinnerIcon from './components/icons/SpinnerIcon';
 import ErrorIcon from './components/icons/ErrorIcon';
-import { filterHeadlinesByMood } from './services/geminiService';
 import type { Article, Language } from './types';
 import { UI_TEXT, CATEGORY_MAP, DYNAMIC_UI_TEXT } from './constants';
 import { authService } from './services/authService';
@@ -105,6 +104,8 @@ const App: React.FC = () => {
         user,
         isNewEditionAvailable,
         updateArticle,
+        activeTopic,
+        setActiveTopic,
     } = useAppStore();
 
     // Custom Hooks for logic
@@ -115,8 +116,6 @@ const App: React.FC = () => {
     // Local UI State
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>('');
-    const [activeMood, setActiveMood] = useState('all');
-    const [moodFilteredIds, setMoodFilteredIds] = useState<string[] | null>(null);
     const [alertInfo, setAlertInfo] = useState<{ title: string; body: string } | null>(null);
     
     const uiText = useMemo(() => UI_TEXT[language], [language]);
@@ -139,43 +138,22 @@ const App: React.FC = () => {
         document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
         document.title = uiText.title;
         setSearchQuery('');
-        setActiveMood('all');
-        setMoodFilteredIds(null);
         setSelectedArticle(null);
     }, [language, uiText]);
     
-    const handleMoodSelect = async (moodKey: string, moodLabel: string) => {
-        setActiveMood(moodKey);
-        if (moodKey === 'all') {
-            setMoodFilteredIds(null);
-            return;
-        }
-        
-        const headlineMap = articles.map(a => ({ id: a.id, text: a.headline }));
-        try {
-            const filtered = await filterHeadlinesByMood(headlineMap, moodLabel, language);
-            setMoodFilteredIds(filtered);
-        } catch(e) {
-            console.error("Failed to filter by mood:", e);
-            // In case of error, reset to all
-            setMoodFilteredIds(null);
-            setActiveMood('all');
-        }
+    const handleTopicSelect = (topicKey: string) => {
+        setActiveTopic(topicKey);
     };
 
     const filteredArticles = useMemo(() => {
-        let articlesToShow = articles;
-        if (moodFilteredIds) {
-            articlesToShow = articles.filter(a => new Set(moodFilteredIds).has(a.id));
-        }
         if (searchQuery) {
-            return articlesToShow.filter(article => 
+            return articles.filter(article => 
                 article.headline.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (article.body && article.body.toLowerCase().includes(searchQuery.toLowerCase()))
             );
         }
-        return articlesToShow;
-    }, [articles, searchQuery, moodFilteredIds]);
+        return articles;
+    }, [articles, searchQuery]);
     
     const groupedArticles: Record<string, Article[]> = useMemo(() => {
         return filteredArticles.reduce((acc: Record<string, Article[]>, article) => {
@@ -221,7 +199,7 @@ const App: React.FC = () => {
                 <div className="container mx-auto p-4 lg:p-6">
                     <MoodFilter 
                         language={language}
-                        activeMood={activeMood}
+                        activeTopic={activeTopic}
                         onSelect={() => {}} 
                     />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -268,12 +246,12 @@ const App: React.FC = () => {
           <div className="container mx-auto p-4 lg:p-6">
               <MoodFilter 
                   language={language}
-                  activeMood={activeMood}
-                  onSelect={handleMoodSelect}
+                  activeTopic={activeTopic}
+                  onSelect={handleTopicSelect}
               />
               {Object.entries(groupedArticles).length === 0 && !isLoading && (
                    <div className="col-span-full flex items-center justify-center py-20">
-                       <p className="text-2xl text-stone-500">No articles found for this filter.</p>
+                       <p className="text-2xl text-stone-500">No articles found for this topic.</p>
                    </div>
               )}
               {Object.entries(groupedArticles).map(([dayLabel, dayArticles]) => (
@@ -288,13 +266,13 @@ const App: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                           {dayArticles.map((item, index) => {
-                              const isFeatured = index === 0 && !searchQuery && activeMood === 'all' && dayArticles.length > 3;
+                              const isFeatured = index === 0 && !searchQuery && activeTopic === 'all' && dayArticles.length > 3;
                               return (
                                 <ArticleCard 
                                   key={item.id}
                                   article={item}
                                   onReadMore={setSelectedArticle}
-                                  categoryText={CATEGORY_MAP[language][item.category]}
+                                  categoryText={CATEGORY_MAP[language][item.category] || item.category}
                                   uiText={uiText}
                                   isFeatured={isFeatured}
                                 />

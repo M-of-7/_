@@ -2,22 +2,26 @@ import type { Category } from './types';
 
 export const APP_VERSION = '1.5.0'; // Version identifier
 
-export const CATEGORIES: Category[] = ['World', 'Technology', 'Sports', 'Business', 'Local'];
+export const CATEGORIES: Category[] = ['World', 'Technology', 'Sports', 'Business', 'Local', 'Politics'];
 
-export const MOOD_FILTERS = {
+export const TOPIC_FILTERS = {
   en: [
     { key: 'all', label: 'All News' },
-    { key: 'breaking', label: 'Breaking News' },
-    { key: 'deep_dive', label: 'Deep Dives' },
-    { key: 'uplifting', label: 'Uplifting Stories' },
-    { key: 'future_tech', label: 'Future Tech' },
+    { key: 'politics', label: 'Politics' },
+    { key: 'world', label: 'World' },
+    { key: 'technology', label: 'Technology' },
+    { key: 'business', label: 'Business' },
+    { key: 'sports', label: 'Sports' },
+    { key: 'local', label: 'Local' },
   ],
   ar: [
     { key: 'all', label: 'كل الأخبار' },
-    { key: 'breaking', label: 'أخبار عاجلة' },
-    { key: 'deep_dive', label: 'تحليلات عميقة' },
-    { key: 'uplifting', label: 'قصص ملهمة' },
-    { key: 'future_tech', label: 'تكنولوجيا المستقبل' },
+    { key: 'politics', label: 'سياسة' },
+    { key: 'world', label: 'العالم' },
+    { key: 'technology', label: 'تكنولوجيا' },
+    { key: 'business', label: 'أعمال' },
+    { key: 'sports', label: 'رياضة' },
+    { key: 'local', label: 'أخبار محلية' },
   ]
 }
 
@@ -61,7 +65,7 @@ export const UI_TEXT = {
     low_spreading: 'Low Spreading',
     unknown: 'Virality Unknown',
     sources: 'Sources',
-    mood_filter_prompt: 'What are you interested in today?',
+    topic_filter_prompt: 'What are you interested in today?',
     loading_older_articles: 'Loading older articles...',
     load_older_articles: 'Click to load older articles',
     new_edition_available: 'New edition available!',
@@ -111,7 +115,7 @@ export const UI_TEXT = {
     low_spreading: 'قليل الانتشار',
     unknown: 'انتشار غير معروف',
     sources: 'المصادر',
-    mood_filter_prompt: 'ما الذي يثير اهتمامك اليوم؟',
+    topic_filter_prompt: 'ما الذي يثير اهتمامك اليوم؟',
     loading_older_articles: 'جاري تحميل المقالات الأقدم...',
     load_older_articles: 'اضغط لتحميل المقالات الأقدم',
     new_edition_available: 'إصدار جديد متوفر!',
@@ -154,6 +158,7 @@ export const CATEGORY_MAP = {
     Sports: 'Sports',
     Business: 'Business',
     Local: 'Local News',
+    Politics: 'Politics',
   },
   ar: {
     World: 'أخبار العالم',
@@ -161,5 +166,6 @@ export const CATEGORY_MAP = {
     Sports: 'رياضة',
     Business: 'أعمال',
     Local: 'أخبار محلية',
+    Politics: 'سياسة',
   }
 }

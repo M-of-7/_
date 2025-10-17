@@ -1,17 +1,16 @@
 import React from 'react';
 import type { Language } from '../types';
-import { MOOD_FILTERS, UI_TEXT } from '../constants';
+import { TOPIC_FILTERS, UI_TEXT } from '../constants';
 
-interface MoodFilterProps {
+interface TopicFilterProps {
   language: Language;
-  activeMood: string;
-  onSelect: (moodKey: string, moodLabel: string) => void;
-  isLoading?: boolean;
+  activeTopic: string;
+  onSelect: (topicKey: string) => void;
 }
 
-const MoodFilter: React.FC<MoodFilterProps> = ({ language, activeMood, onSelect, isLoading = false }) => {
-  const filters = MOOD_FILTERS[language];
-  const promptText = UI_TEXT[language].mood_filter_prompt;
+const MoodFilter: React.FC<TopicFilterProps> = ({ language, activeTopic, onSelect }) => {
+  const filters = TOPIC_FILTERS[language];
+  const promptText = UI_TEXT[language].topic_filter_prompt;
 
   return (
     <div className="my-6 p-4 bg-white rounded-lg shadow-sm border border-stone-200">
@@ -21,14 +20,12 @@ const MoodFilter: React.FC<MoodFilterProps> = ({ language, activeMood, onSelect,
           {filters.map(filter => (
             <button
               key={filter.key}
-              onClick={() => onSelect(filter.key, filter.label)}
-              disabled={isLoading}
+              onClick={() => onSelect(filter.key)}
               className={`
                 px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-200
-                ${activeMood === filter.key 
+                ${activeTopic === filter.key 
                   ? 'bg-stone-800 text-white shadow' 
                   : 'bg-stone-200 text-stone-700 hover:bg-stone-300'}
-                ${isLoading ? 'cursor-not-allowed opacity-60' : ''}
               `}
             >
               {filter.label}

@@ -1,4 +1,4 @@
-export type Category = 'World' | 'Technology' | 'Sports' | 'Business' | 'Local';
+export type Category = 'World' | 'Technology' | 'Sports' | 'Business' | 'Local' | 'Politics';
 
 export interface Comment {
   author: string;
