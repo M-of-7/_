@@ -223,7 +223,6 @@ const App: React.FC = () => {
                         language={language}
                         activeMood={activeMood}
                         onSelect={() => {}} 
-                        isLoading={true}
                     />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         <ArticleCardSkeleton isFeatured={true} />
@@ -320,6 +319,12 @@ const App: React.FC = () => {
                             <span className="w-48 block">{uiText.load_older_articles}</span>
                         )}
                     </button>
+                </div>
+              )}
+              {!hasNextPage && articles.length > 0 && (
+                <div className="text-center my-10 p-6 bg-stone-200/70 rounded-lg">
+                    <h3 className="text-2xl font-bold text-stone-800">{uiText.end_of_feed_title}</h3>
+                    <p className="mt-2 text-stone-600">{uiText.end_of_feed_body}</p>
                 </div>
               )}
           </div>

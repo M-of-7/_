@@ -18,12 +18,14 @@ INSTRUCTIONS:
 
 */
 
-// Firebase Configuration
+// FIX: Export the configuration object and rename it to FIREBASE_CONFIG to resolve module import errors.
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCH4tFEAWz58YI7_m1UszWahRfU4hYs9Yg",
-  authDomain:"suhufapp-deb24.firebaseapp.com",
+  authDomain: "suhufapp-deb24.firebaseapp.com",
+  databaseURL: "https://suhufapp-deb24-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "suhufapp-deb24",
-  storageBucket: "suhufapp-deb24.appspot.com",
+  storageBucket: "suhufapp-deb24.firebasestorage.app",
   messagingSenderId: "293441864745",
   appId: "1:293441864745:web:e2ecdf71b94e60d7090838",
   measurementId: "G-FY9LKR682G"

@@ -115,7 +115,7 @@ export const useArticles = () => {
         queryKey: ['articles', today.toISOString().split('T')[0], language],
         queryFn: () => fetchArticlesForDay(today, language),
         enabled: appStatus === 'ready',
-        refetchInterval: 5 * 60 * 1000,
+        refetchInterval: 60 * 1000,
     });
     const todayArticles = todayArticlesData || [];
     
@@ -149,7 +149,7 @@ export const useArticles = () => {
         initialPageParam: 1,
         getNextPageParam: (_, allPages) => {
             const nextPage = allPages.length + 1;
-            return nextPage < 7 ? nextPage : undefined;
+            return nextPage < 30 ? nextPage : undefined;
         },
         enabled: appStatus === 'ready',
     });

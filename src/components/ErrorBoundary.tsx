@@ -1,33 +1,30 @@
-import React from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // FIX: Reverted to using a constructor for state initialization to ensure
-  // 'this.props' is correctly typed on the component instance, resolving the build error.
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  // FIX: Refactored to use class field for state initialization.
+  // This is a more modern and robust syntax that avoids potential issues with `this` in the constructor.
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
     // Update state so the next render will show the fallback UI.
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // You can also log the error to an error reporting service
     console.error("Uncaught error in React component tree:", error, errorInfo);
   }
 
   // FIX: Add explicit return type to the render method to aid type inference.
-  render(): React.ReactNode {
+  render(): ReactNode {
     if (this.state.hasError) {
       const isRTL = document.documentElement.dir === 'rtl';
       // You can render any custom fallback UI
