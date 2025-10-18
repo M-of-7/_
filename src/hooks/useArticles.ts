@@ -190,9 +190,13 @@ export const useArticles = () => {
             const processDetails = async () => {
                 try {
                     const details = await generateArticleDetails(article.headline, language);
-                    const updatedArticle = { ...article, ...details };
-                    updateArticle(updatedArticle); // Update UI with details
-                    firestoreService.syncArticle(updatedArticle); // Sync partial update to cache
+                    // FIX: Before updating state, check if the active topic has changed.
+                    // This prevents stale async operations from polluting the new state.
+                    if (useAppStore.getState().activeTopic === activeTopic) {
+                        const updatedArticle = { ...article, ...details };
+                        updateArticle(updatedArticle); // Update UI with details
+                        firestoreService.syncArticle(updatedArticle); // Sync partial update to cache
+                    }
                 } catch (err) {
                     console.error(`Failed to fetch details for article ${article.id}`, err);
                     processingDetailIds.current.delete(article.id); // Allow reprocessing on error
@@ -203,7 +207,7 @@ export const useArticles = () => {
 
             processDetails();
         });
-    }, [articles, language, updateArticle, inFlightDetailJobs]);
+    }, [articles, language, updateArticle, inFlightDetailJobs, activeTopic]);
 
     // Effect to process articles with details but needing images
     useEffect(() => {
@@ -226,9 +230,13 @@ export const useArticles = () => {
             const processImage = async () => {
                 try {
                     const imageUrl = await generateArticleImage(article.imagePrompt!);
-                    const updatedArticle = { ...article, imageUrl };
-                    updateArticle(updatedArticle); // Final update with the image
-                    firestoreService.syncArticle(updatedArticle); // Sync final article to cache
+                    // FIX: Before updating state, check if the active topic has changed.
+                    // This prevents stale async operations from polluting the new state.
+                    if (useAppStore.getState().activeTopic === activeTopic) {
+                        const updatedArticle = { ...article, imageUrl };
+                        updateArticle(updatedArticle); // Final update with the image
+                        firestoreService.syncArticle(updatedArticle); // Sync final article to cache
+                    }
                 } catch (err) {
                     console.error(`Failed to generate image for article ${article.id}`, err);
                     processingImageIds.current.delete(article.id); // Allow reprocessing on error
@@ -239,7 +247,7 @@ export const useArticles = () => {
             
             processImage();
         });
-    }, [articles, language, updateArticle, inFlightImageJobs]);
+    }, [articles, language, updateArticle, inFlightImageJobs, activeTopic]);
     
     const refresh = () => {
         setArticles([]); // Clear articles in the store for immediate feedback
