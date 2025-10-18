@@ -79,6 +79,7 @@ export const useArticles = () => {
         language, 
         appStatus,
         articles, 
+        setArticles,
         updateArticle,
         updateMultipleArticles,
         setInitialTodayHeadlines,
@@ -232,7 +233,7 @@ export const useArticles = () => {
                     console.error(`Failed to generate image for article ${article.id}`, err);
                     processingImageIds.current.delete(article.id); // Allow reprocessing on error
                 } finally {
-                    setInFlightImageJobs(current => Math.max(0, current - 1));
+                    setInFlightImageJobs(current => current - Math.max(0, current - 1));
                 }
             };
             
@@ -247,7 +248,8 @@ export const useArticles = () => {
         setInFlightDetailJobs(0);
         setInFlightImageJobs(0);
         setInitialTodayHeadlines([]);
-        // Invalidate the new 'articles' query key to force a full refresh
+        setArticles([]); // Clear articles in the store for immediate feedback
+        // Invalidate react-query cache to force a full refetch from the backend
         queryClient.invalidateQueries({ queryKey: ['articles'] });
     };
 

@@ -47,8 +47,8 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="bg-stone-100 p-3 lg:p-4 border-b-2 border-stone-200">
-      <div className="flex justify-between items-center">
-        <div className="flex-1 flex items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="w-full md:w-auto flex-1 flex items-center gap-4">
           <button 
             onClick={onRefresh} 
             title={uiText.refresh_tooltip} 
@@ -70,12 +70,12 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
         
-        <div className="flex-1.5 text-center px-4">
+        <div className="flex-1.5 text-center px-4 order-first md:order-none">
           <h1 className={`text-3xl lg:text-4xl font-black tracking-wider text-stone-900 ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{title}</h1>
           <p className={`text-xs mt-1 text-stone-600 ${isRTL ? 'font-serif-ar' : 'font-serif-en'}`}>{subtitle}</p>
         </div>
 
-        <div className="flex-1 flex items-center justify-end gap-4">
+        <div className="w-full md:w-auto flex-1 flex items-center justify-center md:justify-end gap-4">
           <button onClick={user ? onLogout : onLogin} className="bg-stone-800 text-white px-4 py-1.5 rounded-md text-sm font-bold hover:bg-stone-900 transition-colors">
             {user ? uiText.logout : uiText.login}
           </button>

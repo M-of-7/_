@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, lazy, Suspense, useRef, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Header from './components/Header';
 import ArticleCard from './components/ArticleCard';
 import LoadingOverlay from './components/LoadingOverlay';
-import TopicFilter from './components/MoodFilter';
+import TopicFilter from './components/TopicFilter';
 import SpinnerIcon from './components/icons/SpinnerIcon';
 import ErrorIcon from './components/icons/ErrorIcon';
 import type { Article, Language } from './types';
@@ -113,6 +114,8 @@ const App: React.FC = () => {
         setActiveTopic,
     } = useAppStore();
 
+    const queryClient = useQueryClient();
+
     // Custom Hooks for logic
     const { toggleLanguage } = useAppInitializer();
     useAuth();
@@ -146,6 +149,8 @@ const App: React.FC = () => {
     }, [language, uiText]);
     
     const handleTopicSelect = (topicKey: string) => {
+        // Invalidate and remove older article queries to reset the infinite scroll state
+        queryClient.removeQueries({ queryKey: ['articles', 'older', language] });
         setActiveTopic(topicKey);
     };
 
@@ -199,11 +204,12 @@ const App: React.FC = () => {
                         activeTopic={activeTopic}
                         onSelect={() => {}} 
                     />
-                    <div className="max-w-4xl mx-auto space-y-8">
-                        <ArticleCardSkeleton />
-                        <ArticleCardSkeleton />
-                        <ArticleCardSkeleton />
-                        <ArticleCardSkeleton />
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div className="md:col-span-12 lg:col-span-8"><ArticleCardSkeleton isFeatured={true} /></div>
+                        <div className="md:col-span-6 lg:col-span-4"><ArticleCardSkeleton /></div>
+                        <div className="md:col-span-6 lg:col-span-4"><ArticleCardSkeleton /></div>
+                        <div className="md:col-span-6 lg:col-span-4"><ArticleCardSkeleton /></div>
+                        <div className="md:col-span-6 lg:col-span-4"><ArticleCardSkeleton /></div>
                     </div>
                 </div>
             );
@@ -256,22 +262,26 @@ const App: React.FC = () => {
                        <p className="mt-2 text-stone-400">{language === 'ar' ? 'حاول تحديد فئة مختلفة.' : 'Try selecting a different topic.'}</p>
                    </div>
               ) : (
-                <div className="max-w-4xl mx-auto space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                   {filteredArticles.map((item, index) => {
-                      const card = (
-                          <ArticleCard 
-                              key={item.id}
-                              article={item}
-                              onReadMore={setSelectedArticle}
-                              categoryText={CATEGORY_MAP[language][item.category] || item.category}
-                              uiText={uiText}
-                          />
+                      const isFeatured = index === 0 && activeTopic === 'all' && searchQuery === '';
+                      const refProp = (filteredArticles.length === index + 1) ? { ref: lastArticleElementRef } : {};
+                      
+                      return (
+                         <div
+                            key={item.id}
+                            {...refProp}
+                            className={isFeatured ? 'md:col-span-12 lg:col-span-8' : 'md:col-span-6 lg:col-span-4'}
+                         >
+                            <ArticleCard 
+                                article={item}
+                                onReadMore={setSelectedArticle}
+                                categoryText={CATEGORY_MAP[language][item.category] || item.category}
+                                uiText={uiText}
+                                isFeatured={isFeatured}
+                            />
+                         </div>
                       );
-
-                      if (filteredArticles.length === index + 1) {
-                        return <div ref={lastArticleElementRef} key={item.id}>{card}</div>;
-                      }
-                      return card;
                   })}
                 </div>
               )}
