@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, lazy, Suspense, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import Header from './components/Header';
 import ArticleCard from './components/ArticleCard';
@@ -112,6 +112,7 @@ const App: React.FC = () => {
         updateArticle,
         activeTopic,
         setActiveTopic,
+        hydrationError,
     } = useAppStore();
 
     const queryClient = useQueryClient();
@@ -128,9 +129,9 @@ const App: React.FC = () => {
     
     const uiText = useMemo(() => UI_TEXT[language], [language]);
     
-    const errorMessage = useMemo(() => {
+    // Error message for initial page load failures (e.g., first headline fetch)
+    const pageErrorMessage = useMemo(() => {
         if (storeErrorMessage) {
-            // Generic handling for any store error (e.g., Firebase config if it's re-enabled)
             return { title: uiText.config_error_title, body: storeErrorMessage };
         }
         if (isError) {
@@ -138,6 +139,21 @@ const App: React.FC = () => {
         }
         return null;
     }, [storeErrorMessage, isError, error, uiText]);
+
+    // Error message for hydration failures (e.g., fetching article details after headlines are shown)
+    const hydrationAlertMessage = useMemo(() => {
+        if (hydrationError) {
+            return getFriendlyErrorMessage({ message: hydrationError }, uiText);
+        }
+        return null;
+    }, [hydrationError, uiText]);
+
+    // Effect to show the alert modal for hydration errors
+    useEffect(() => {
+        if (hydrationAlertMessage) {
+            setAlertInfo({ title: hydrationAlertMessage.title, body: hydrationAlertMessage.body });
+        }
+    }, [hydrationAlertMessage]);
 
 
     // Handle deep linking to articles via URL hash
@@ -199,19 +215,6 @@ const App: React.FC = () => {
         setSearchQuery('');
         handleSelectArticle(null);
     }, [language, uiText]);
-
-    // Infinite scroll implementation - moved to top level to obey Rules of Hooks
-    const observer = useRef<IntersectionObserver>();
-    const lastArticleElementRef = useCallback((node: HTMLDivElement) => {
-        if (isFetchingNextPage) return;
-        if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasNextPage) {
-                fetchNextPage();
-            }
-        });
-        if (node) observer.current.observe(node);
-    }, [isFetchingNextPage, fetchNextPage, hasNextPage]);
     
     const handleTopicSelect = (topicKey: string) => {
         if (activeTopic === topicKey) return; // Prevent re-fetching for the same topic
@@ -284,13 +287,13 @@ const App: React.FC = () => {
             );
         }
 
-        if (appStatus === 'error' || (isError && articles.length === 0)) {
-           const isQuotaError = errorMessage?.body.includes("quota") || errorMessage?.body.includes("حصتك");
+        if (pageErrorMessage && articles.length === 0) {
+           const isQuotaError = pageErrorMessage?.body.includes("quota") || pageErrorMessage?.body.includes("حصتك");
            return (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <ErrorIcon className="w-20 h-20 text-red-400" />
-                <h2 className="mt-6 text-3xl font-bold text-stone-800">{errorMessage?.title}</h2>
-                <p className="mt-2 max-w-lg text-lg text-stone-600">{errorMessage?.body}</p>
+                <h2 className="mt-6 text-3xl font-bold text-stone-800">{pageErrorMessage?.title}</h2>
+                <p className="mt-2 max-w-lg text-lg text-stone-600">{pageErrorMessage?.body}</p>
                 {isQuotaError && (
                     <a 
                         href="https://console.cloud.google.com/billing" 
@@ -321,25 +324,6 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredArticles.map((item, index) => {
                       const isFeatured = index === 0 && activeTopic === 'all' && searchQuery === '';
-                      
-                      if (filteredArticles.length === index + 1) {
-                        return (
-                           <div
-                              key={item.id}
-                              ref={lastArticleElementRef}
-                              className={isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}
-                           >
-                              <ArticleCard 
-                                  article={item}
-                                  onReadMore={handleSelectArticle}
-                                  categoryText={CATEGORY_MAP[language][item.category] || item.category}
-                                  uiText={uiText}
-                                  isFeatured={isFeatured}
-                              />
-                           </div>
-                        );
-                      }
-                      
                       return (
                          <div
                             key={item.id}
@@ -358,14 +342,17 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {isFetchingNextPage && (
-                <div className="flex justify-center my-8">
-                    <div className="flex items-center justify-center gap-2 text-stone-600">
-                        <SpinnerIcon className="w-6 h-6" />
-                        <span>{uiText.loading_older_articles}</span>
-                    </div>
-                </div>
-              )}
+              <div className="flex justify-center my-8">
+                  {hasNextPage && !isLoading && (
+                    <button
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                        className="px-6 py-3 bg-stone-800 text-white font-bold rounded-lg hover:bg-stone-900 disabled:bg-stone-400 disabled:cursor-wait transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                    >
+                        {isFetchingNextPage ? uiText.loading_more : uiText.load_more_articles}
+                    </button>
+                  )}
+              </div>
 
               {!hasNextPage && articles.length > 0 && (
                 <div className="text-center my-10 p-6 bg-stone-200/70 rounded-lg max-w-4xl mx-auto">

@@ -34,6 +34,7 @@ interface AppState {
   isNewEditionAvailable: boolean;
   initialTodayHeadlines: string[];
   activeTopic: string;
+  hydrationError: string | null;
   
   // Actions
   hydrateFromLocalStorage: () => void;
@@ -48,6 +49,7 @@ interface AppState {
   setIsNewEditionAvailable: (isAvailable: boolean) => void;
   setInitialTodayHeadlines: (headlines: string[]) => void;
   setActiveTopic: (topic: string) => void;
+  setHydrationError: (error: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -61,6 +63,7 @@ export const useAppStore = create<AppState>((set) => ({
   isNewEditionAvailable: false,
   initialTodayHeadlines: [],
   activeTopic: 'all',
+  hydrationError: null,
   
   // Actions
   hydrateFromLocalStorage: () => {
@@ -87,6 +90,7 @@ export const useAppStore = create<AppState>((set) => ({
       isNewEditionAvailable: false,
       appStatus: 'initializing', // Trigger re-initialization
       activeTopic: 'all',
+      hydrationError: null,
     })
   },
   setAppStatus: (status, error = null) => set({ appStatus: status, errorMessage: error }),
@@ -146,8 +150,9 @@ export const useAppStore = create<AppState>((set) => ({
   setActiveTopic: (topic) => set(state => {
     // Invalidate articles if topic changes to force a full refetch
     if (state.activeTopic !== topic) {
-      return { activeTopic: topic, articles: [] };
+      return { activeTopic: topic, articles: [], hydrationError: null };
     }
     return { activeTopic: topic };
   }),
+  setHydrationError: (error) => set({ hydrationError: error }),
 }));

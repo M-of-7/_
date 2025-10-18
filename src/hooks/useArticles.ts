@@ -87,6 +87,8 @@ export const useArticles = () => {
         setIsNewEditionAvailable,
         initialTodayHeadlines,
         activeTopic,
+        hydrationError,
+        setHydrationError,
     } = useAppStore();
     const queryClient = useQueryClient();
 
@@ -127,15 +129,6 @@ export const useArticles = () => {
         enabled: appStatus === 'ready',
     });
 
-    // Automatically fetch the second page (yesterday's articles) on initial load
-    // to create a richer starting experience.
-    useEffect(() => {
-        const pageCount = articlePages?.pages.length ?? 0;
-        if (pageCount === 1 && hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-        }
-    }, [articlePages?.pages.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
-
     // Consolidate all fetched articles into the Zustand store
     useEffect(() => {
         const allFetchedArticles = articlePages?.pages.flat().filter(Boolean) || [];
@@ -165,6 +158,8 @@ export const useArticles = () => {
 
     // Effect to process shell articles (fetching details only)
     useEffect(() => {
+        if (hydrationError) return; // Stop processing if a hydration error occurred
+
         const articlesNeedingDetails = articles.filter(
             a => !a.body && !processingDetailIds.current.has(a.id)
         );
@@ -196,6 +191,9 @@ export const useArticles = () => {
                     }
                 } catch (err) {
                     console.error(`Failed to fetch details for article ${article.id}`, err);
+                    if (err instanceof Error && (err.message.includes('quota') || err.message.includes('429'))) {
+                        setHydrationError(err.message);
+                    }
                     processingDetailIds.current.delete(article.id);
                 } finally {
                     setInFlightDetailJobs(current => Math.max(0, current - 1));
@@ -204,10 +202,12 @@ export const useArticles = () => {
 
             processDetails();
         });
-    }, [articles, language, updateArticle, inFlightDetailJobs, activeTopic]);
+    }, [articles, language, updateArticle, inFlightDetailJobs, activeTopic, hydrationError, setHydrationError]);
 
     // Effect to process articles with details but needing images
     useEffect(() => {
+        if (hydrationError) return; // Stop processing if a hydration error occurred
+
         const articlesNeedingImages = articles.filter(
             a => a.body && a.imagePrompt && a.imageUrl === '' && !processingImageIds.current.has(a.id)
         );
@@ -234,6 +234,9 @@ export const useArticles = () => {
                     }
                 } catch (err) {
                     console.error(`Failed to generate image for article ${article.id}`, err);
+                     if (err instanceof Error && (err.message.includes('quota') || err.message.includes('429'))) {
+                        setHydrationError(err.message);
+                    }
                     processingImageIds.current.delete(article.id);
                 } finally {
                     setInFlightImageJobs(current => current - Math.max(0, current - 1));
@@ -242,9 +245,10 @@ export const useArticles = () => {
             
             processImage();
         });
-    }, [articles, language, updateArticle, inFlightImageJobs, activeTopic]);
+    }, [articles, language, updateArticle, inFlightImageJobs, activeTopic, hydrationError, setHydrationError]);
     
     const refresh = () => {
+        setHydrationError(null); // Clear the hydration error on refresh
         setArticles([]);
         setIsNewEditionAvailable(false);
         processingDetailIds.current.clear();
