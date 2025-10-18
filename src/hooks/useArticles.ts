@@ -1,4 +1,4 @@
-import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { generateHeadlinesForDay, generateArticleDetails, generateArticleImage } from '../services/geminiService';
 import { useAppStore } from '../store/store';
@@ -61,6 +61,7 @@ const fetchArticlesForDay = async (date: Date, language: Language, topic: string
         date: date.toISOString(),
         imageUrl: '',
         comments: [],
+        sources: [],
     }));
 
     // 4. Save shell articles to Firestore cache to prevent re-generation on refresh.
@@ -100,18 +101,58 @@ export const useArticles = () => {
         d.setHours(0, 0, 0, 0);
         return d;
     }, []);
-
-    // Query for today's articles. It will now fetch from cache or generate.
-    const { data: todayArticlesData, isLoading: isLoadingToday, isError: isErrorToday, error: todayError } = useQuery({
-        queryKey: ['articles', today.toISOString().split('T')[0], language, activeTopic],
-        queryFn: () => fetchArticlesForDay(today, language, activeTopic),
-        enabled: appStatus === 'ready',
-        refetchInterval: 60 * 1000,
-    });
-    const todayArticles = todayArticlesData || [];
     
+    // Infinite query for all articles, starting from today (page 0).
+    const {
+        data: articlePages,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        isError,
+        error
+    } = useInfiniteQuery({
+        queryKey: ['articles', language, activeTopic],
+        queryFn: ({ pageParam }) => {
+            const date = new Date(today);
+            date.setDate(today.getDate() - pageParam);
+            return fetchArticlesForDay(date, language, activeTopic);
+        },
+        initialPageParam: 0, // Start with today
+        getNextPageParam: (lastPage, allPages) => {
+            // We fetch up to 30 days of articles
+            const nextPage = allPages.length;
+            return nextPage < 30 ? nextPage : undefined;
+        },
+        enabled: appStatus === 'ready',
+    });
+
+    // Automatically fetch the second page (yesterday's articles) on initial load
+    // to create a richer starting experience.
+    useEffect(() => {
+        const pageCount = articlePages?.pages.length ?? 0;
+        if (pageCount === 1 && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [articlePages?.pages.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    // Consolidate all fetched articles into the Zustand store
+    useEffect(() => {
+        const allFetchedArticles = articlePages?.pages.flat().filter(Boolean) || [];
+        
+        if (allFetchedArticles.length > 0) {
+            updateMultipleArticles(allFetchedArticles);
+            
+            const todayArticles = articlePages?.pages[0] || [];
+            if (useAppStore.getState().initialTodayHeadlines.length === 0 && todayArticles.length > 0 && activeTopic === 'all') {
+                setInitialTodayHeadlines(todayArticles.map(a => a.headline));
+            }
+        }
+    }, [articlePages, updateMultipleArticles, activeTopic, setInitialTodayHeadlines]);
+
     // Logic to detect if a new edition is available by comparing headlines
     useEffect(() => {
+        const todayArticles = articlePages?.pages[0] || [];
         if (todayArticles.length > 0 && initialTodayHeadlines.length > 0 && activeTopic === 'all') {
             const latestHeadlines = new Set(todayArticles.map(a => a.headline));
             const currentHeadlines = new Set(initialTodayHeadlines);
@@ -119,52 +160,7 @@ export const useArticles = () => {
                 setIsNewEditionAvailable(true);
             }
         }
-    }, [todayArticles, initialTodayHeadlines, setIsNewEditionAvailable, activeTopic]);
-
-    // Infinite query for older articles, also using the caching mechanism
-    const {
-        data: olderArticlesPages,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading: isLoadingOlder,
-        isError: isErrorOlder,
-        error: olderError
-    } = useInfiniteQuery({
-        queryKey: ['articles', 'older', language, activeTopic],
-        queryFn: ({ pageParam }) => {
-            const date = new Date(today);
-            date.setDate(today.getDate() - pageParam);
-            return fetchArticlesForDay(date, language, activeTopic);
-        },
-        initialPageParam: 1,
-        getNextPageParam: (_, allPages) => {
-            const nextPage = allPages.length + 1;
-            return nextPage < 30 ? nextPage : undefined;
-        },
-        enabled: appStatus === 'ready',
-    });
-
-    // Effect to consolidate all fetched articles (from cache or new) into the Zustand store
-    useEffect(() => {
-        const olderArticlesFlat = olderArticlesPages?.pages.flat() || [];
-        const allFetchedArticles = [...todayArticles, ...olderArticlesFlat].filter(Boolean);
-        
-        if (allFetchedArticles.length > 0) {
-            // Pass the raw fetched articles to the store.
-            // The store's update action is now responsible for merging them correctly
-            // with existing state and preventing unnecessary updates.
-            updateMultipleArticles(allFetchedArticles);
-
-            // This part also needs the latest state to avoid race conditions.
-            if (useAppStore.getState().initialTodayHeadlines.length === 0 && todayArticles.length > 0 && activeTopic === 'all') {
-                setInitialTodayHeadlines(todayArticles.map(a => a.headline));
-            }
-        }
-    // FIX: Removed `articles` and `initialTodayHeadlines` from the dependency array.
-    // This effect should only run when the raw data from React Query (`todayArticles`, `olderArticlesPages`) changes.
-    // Depending on `articles` caused an infinite loop because this effect itself updates the articles.
-    }, [todayArticles, olderArticlesPages, updateMultipleArticles, activeTopic, setInitialTodayHeadlines]);
+    }, [articlePages, initialTodayHeadlines, setIsNewEditionAvailable, activeTopic]);
 
 
     // Effect to process shell articles (fetching details only)
@@ -187,17 +183,20 @@ export const useArticles = () => {
 
             const processDetails = async () => {
                 try {
-                    const details = await generateArticleDetails(article.headline, language);
-                    // FIX: Before updating state, check if the active topic has changed.
-                    // This prevents stale async operations from polluting the new state.
+                    const { details, groundingMetadata } = await generateArticleDetails(article.headline, language);
+                    // Populate sources from grounding metadata for accuracy
+                    const sources = groundingMetadata?.groundingChunks
+                        ?.map(chunk => chunk.web && { title: chunk.web.title || chunk.web.uri, uri: chunk.web.uri })
+                        .filter(Boolean) as { title: string; uri: string }[] || [];
+
                     if (useAppStore.getState().activeTopic === activeTopic) {
-                        const updatedArticle = { ...article, ...details };
-                        updateArticle(updatedArticle); // Update UI with details
-                        firestoreService.syncArticle(updatedArticle); // Sync partial update to cache
+                        const updatedArticle = { ...article, ...details, sources };
+                        updateArticle(updatedArticle);
+                        firestoreService.syncArticle(updatedArticle);
                     }
                 } catch (err) {
                     console.error(`Failed to fetch details for article ${article.id}`, err);
-                    processingDetailIds.current.delete(article.id); // Allow reprocessing on error
+                    processingDetailIds.current.delete(article.id);
                 } finally {
                     setInFlightDetailJobs(current => Math.max(0, current - 1));
                 }
@@ -228,16 +227,14 @@ export const useArticles = () => {
             const processImage = async () => {
                 try {
                     const imageUrl = await generateArticleImage(article.imagePrompt!);
-                    // FIX: Before updating state, check if the active topic has changed.
-                    // This prevents stale async operations from polluting the new state.
                     if (useAppStore.getState().activeTopic === activeTopic) {
                         const updatedArticle = { ...article, imageUrl };
-                        updateArticle(updatedArticle); // Final update with the image
-                        firestoreService.syncArticle(updatedArticle); // Sync final article to cache
+                        updateArticle(updatedArticle);
+                        firestoreService.syncArticle(updatedArticle);
                     }
                 } catch (err) {
                     console.error(`Failed to generate image for article ${article.id}`, err);
-                    processingImageIds.current.delete(article.id); // Allow reprocessing on error
+                    processingImageIds.current.delete(article.id);
                 } finally {
                     setInFlightImageJobs(current => current - Math.max(0, current - 1));
                 }
@@ -248,20 +245,23 @@ export const useArticles = () => {
     }, [articles, language, updateArticle, inFlightImageJobs, activeTopic]);
     
     const refresh = () => {
-        setArticles([]); // Clear articles in the store for immediate feedback
+        setArticles([]);
         setIsNewEditionAvailable(false);
         processingDetailIds.current.clear();
         processingImageIds.current.clear();
         setInFlightDetailJobs(0);
         setInFlightImageJobs(0);
         setInitialTodayHeadlines([]);
-        // Invalidate react-query cache to force a full refetch from the backend
         queryClient.invalidateQueries({ queryKey: ['articles'] });
     };
 
-    const isLoading = (isLoadingToday || isLoadingOlder) && articles.length === 0;
-    const isError = isErrorToday || isErrorOlder;
-    const error = todayError || olderError;
-
-    return { isLoading, isError, error, isFetchingNextPage, fetchNextPage, hasNextPage, refresh };
+    return { 
+        isLoading: isLoading && articles.length === 0, 
+        isError, 
+        error, 
+        isFetchingNextPage, 
+        fetchNextPage, 
+        hasNextPage, 
+        refresh 
+    };
 };

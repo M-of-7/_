@@ -16,8 +16,8 @@ interface ShareButtonsProps {
 
 const ShareButtons: React.FC<ShareButtonsProps> = ({ article, uiText }) => {
   const [copied, setCopied] = useState(false);
-  // In a web context, we can often use the current window's URL.
-  const pageUrl = window.location.href; 
+  // Construct a shareable URL with a hash for direct article access
+  const pageUrl = `${window.location.origin}${window.location.pathname}#/article/${article.id}`; 
   const shareText = `${article.headline} - ${uiText.title || 'suhf'}`;
   const shareMessage = `${shareText}\n\n${pageUrl}`;
 

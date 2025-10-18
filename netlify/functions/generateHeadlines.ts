@@ -37,6 +37,7 @@ export const handler: Handler = async (event) => {
                 const systemInstruction = `You are a world-class news editor for a bilingual newspaper (English and Arabic).
                 Your task is to generate 7 compelling, diverse, and factual news headlines.
                 IMPORTANT: You must avoid creating multiple headlines for the same underlying news event to ensure variety.
+                Headlines MUST be specific and avoid ambiguity (e.g., instead of 'National Team Wins', specify the country like 'Brazil's National Team Wins Soccer Championship').
                 For each headline, provide a suitable category from this list: ${CATEGORIES.join(', ')}.
                 Also, provide a concise, visually descriptive prompt for an AI image generator to create a compelling, photorealistic cover image for the article.`;
                 
@@ -70,7 +71,9 @@ export const handler: Handler = async (event) => {
             case 'generateArticleDetails': {
                 const { headline, language } = payload;
                 const systemInstruction = `You are an expert journalist writing for a bilingual newspaper. Your task is to write a concise, neutral, and informative news article (2-3 paragraphs) based on a given headline.
-                You must also provide a realistic byline, a virality description, and 1-2 plausible sources.`;
+                The article MUST be grounded in real-world information.
+                The article must be specific, mentioning countries, cities, company names, or people involved. Avoid vague terms like 'a local company' or 'the national team' without context.
+                You must also provide a realistic byline appropriate for the story's context, and a virality description.`;
                 
                 const prompt = `For the headline "${headline}" in ${language}, generate the article content.
                 The virality description must be one of: 'Fast Spreading', 'Medium Spreading', or 'Low Spreading' (or the equivalent in ${language}).`;
@@ -80,6 +83,7 @@ export const handler: Handler = async (event) => {
                     contents: prompt,
                     config: {
                         systemInstruction,
+                        tools: [{googleSearch: {}}],
                         responseMimeType: "application/json",
                         responseSchema: {
                             type: Type.OBJECT,
@@ -87,23 +91,16 @@ export const handler: Handler = async (event) => {
                                 body: { type: Type.STRING },
                                 byline: { type: Type.STRING },
                                 viralityDescription: { type: Type.STRING },
-                                sources: {
-                                    type: Type.ARRAY,
-                                    items: {
-                                        type: Type.OBJECT,
-                                        properties: {
-                                            title: { type: Type.STRING },
-                                            uri: { type: Type.STRING }
-                                        },
-                                        required: ["title", "uri"]
-                                    }
-                                }
                             },
                             required: ["body", "byline", "viralityDescription"]
                         }
                     }
                 });
-                return jsonResponse(200, JSON.parse(response.text));
+                
+                const groundingMetadata = response.candidates?.[0]?.groundingMetadata || null;
+                const details = JSON.parse(response.text);
+
+                return jsonResponse(200, { details, groundingMetadata });
             }
 
             case 'generateImage': {

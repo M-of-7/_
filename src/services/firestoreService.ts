@@ -34,6 +34,23 @@ const addCommentToArticle = async (articleId: string, comment: Comment) => {
   }
 };
 
+const getArticleById = async (articleId: string): Promise<Article | null> => {
+  if (!articlesCollection) return null;
+  try {
+    const articleRef = doc(articlesCollection, articleId);
+    const docSnap = await getDoc(articleRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as Article;
+    } else {
+      console.log("No such document!");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching article by ID from Firestore:", error);
+    return null;
+  }
+};
+
 const getArticlesForDay = async (date: string, language: Language): Promise<Article[] | null> => {
     if (!articlesCollection) return null;
     
@@ -96,6 +113,7 @@ const syncArticle = async (article: Article) => {
 
 export const firestoreService = {
     addCommentToArticle,
+    getArticleById,
     getArticlesForDay,
     syncArticle,
     syncArticlesBatch

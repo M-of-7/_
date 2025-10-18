@@ -140,12 +140,64 @@ const App: React.FC = () => {
     }, [storeErrorMessage, isError, error, uiText]);
 
 
+    // Handle deep linking to articles via URL hash
+    useEffect(() => {
+      const loadArticleFromHash = async () => {
+        const hash = window.location.hash;
+        if (hash.startsWith('#/article/')) {
+          const articleId = hash.replace('#/article/', '');
+          if (articleId) {
+            // Check if article is already in state
+            const existingArticle = useAppStore.getState().articles.find(a => a.id === articleId);
+            if (existingArticle) {
+              setSelectedArticle(existingArticle);
+            } else {
+              // If not, fetch it from Firestore
+              const articleFromDb = await firestoreService.getArticleById(articleId);
+              if (articleFromDb) {
+                updateArticle(articleFromDb); // Add to store
+                setSelectedArticle(articleFromDb);
+              } else {
+                 console.warn(`Article with ID ${articleId} not found.`);
+                 // Optionally, show an alert to the user
+              }
+            }
+          }
+        }
+      };
+      loadArticleFromHash();
+
+      // Listen for hash changes to close modal if user navigates back
+      const handleHashChange = () => {
+          if (!window.location.hash.startsWith('#/article/')) {
+              setSelectedArticle(null);
+          }
+      };
+      window.addEventListener('hashchange', handleHashChange);
+      return () => window.removeEventListener('hashchange', handleHashChange);
+
+    }, [updateArticle]);
+
+
+    const handleSelectArticle = (article: Article | null) => {
+      if (article) {
+        window.location.hash = `#/article/${article.id}`;
+      } else {
+        // Clear hash if modal is closed manually
+        if (window.location.hash) {
+          window.history.pushState("", document.title, window.location.pathname + window.location.search);
+        }
+      }
+      setSelectedArticle(article);
+    };
+
+
     useEffect(() => {
         document.documentElement.lang = language;
         document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
         document.title = uiText.title;
         setSearchQuery('');
-        setSelectedArticle(null);
+        handleSelectArticle(null);
     }, [language, uiText]);
 
     // Infinite scroll implementation - moved to top level to obey Rules of Hooks
@@ -279,7 +331,7 @@ const App: React.FC = () => {
                            >
                               <ArticleCard 
                                   article={item}
-                                  onReadMore={setSelectedArticle}
+                                  onReadMore={handleSelectArticle}
                                   categoryText={CATEGORY_MAP[language][item.category] || item.category}
                                   uiText={uiText}
                                   isFeatured={isFeatured}
@@ -295,7 +347,7 @@ const App: React.FC = () => {
                          >
                             <ArticleCard 
                                 article={item}
-                                onReadMore={setSelectedArticle}
+                                onReadMore={handleSelectArticle}
                                 categoryText={CATEGORY_MAP[language][item.category] || item.category}
                                 uiText={uiText}
                                 isFeatured={isFeatured}
@@ -362,7 +414,7 @@ const App: React.FC = () => {
             <Suspense fallback={<ModalLoadingFallback />}>
                 <ArticleModal 
                     article={selectedArticle} 
-                    onClose={() => setSelectedArticle(null)} 
+                    onClose={() => handleSelectArticle(null)} 
                     language={language}
                     isLoggedIn={!!user}
                     onAddComment={handleAddComment}
