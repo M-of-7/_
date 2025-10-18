@@ -147,6 +147,19 @@ const App: React.FC = () => {
         setSearchQuery('');
         setSelectedArticle(null);
     }, [language, uiText]);
+
+    // Infinite scroll implementation - moved to top level to obey Rules of Hooks
+    const observer = useRef<IntersectionObserver>();
+    const lastArticleElementRef = useCallback((node: HTMLDivElement) => {
+        if (isFetchingNextPage) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasNextPage) {
+                fetchNextPage();
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [isFetchingNextPage, fetchNextPage, hasNextPage]);
     
     const handleTopicSelect = (topicKey: string) => {
         if (activeTopic === topicKey) return; // Prevent re-fetching for the same topic
@@ -239,19 +252,6 @@ const App: React.FC = () => {
               </div>
            );
         }
-
-        // Infinite scroll implementation
-        const observer = useRef<IntersectionObserver>();
-        const lastArticleElementRef = useCallback(node => {
-            if (isFetchingNextPage) return;
-            if (observer.current) observer.current.disconnect();
-            observer.current = new IntersectionObserver(entries => {
-                if (entries[0].isIntersecting && hasNextPage) {
-                    fetchNextPage();
-                }
-            });
-            if (node) observer.current.observe(node);
-        }, [isFetchingNextPage, fetchNextPage, hasNextPage]);
         
         return (
           <div className="container mx-auto p-4 lg:p-6">
@@ -269,12 +269,28 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredArticles.map((item, index) => {
                       const isFeatured = index === 0 && activeTopic === 'all' && searchQuery === '';
-                      const refProp = (filteredArticles.length === index + 1) ? { ref: lastArticleElementRef } : {};
+                      
+                      if (filteredArticles.length === index + 1) {
+                        return (
+                           <div
+                              key={item.id}
+                              ref={lastArticleElementRef}
+                              className={isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}
+                           >
+                              <ArticleCard 
+                                  article={item}
+                                  onReadMore={setSelectedArticle}
+                                  categoryText={CATEGORY_MAP[language][item.category] || item.category}
+                                  uiText={uiText}
+                                  isFeatured={isFeatured}
+                              />
+                           </div>
+                        );
+                      }
                       
                       return (
                          <div
                             key={item.id}
-                            {...refProp}
                             className={isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}
                          >
                             <ArticleCard 
