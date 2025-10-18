@@ -6,6 +6,24 @@ const TEXT_MODEL = 'gemini-2.5-flash';
 const IMAGE_MODEL = 'imagen-4.0-generate-001';
 const CATEGORIES = ['World', 'Technology', 'Sports', 'Business', 'Local', 'Politics'];
 
+/**
+ * Parses a JSON string, safely handling cases where the JSON is embedded
+ * within a Markdown code block (```json ... ```).
+ */
+const parseJsonFromMarkdown = <T>(text: string): T => {
+  try {
+    const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (markdownMatch && markdownMatch[1]) {
+      return JSON.parse(markdownMatch[1]) as T;
+    }
+    return JSON.parse(text) as T;
+  } catch (error) {
+    console.error("Failed to parse JSON from text:", text, error);
+    throw new Error("Invalid JSON response from API.");
+  }
+};
+
+
 // Helper to send consistent JSON responses
 const jsonResponse = (statusCode: number, body: object) => ({
     statusCode,
@@ -70,13 +88,14 @@ export const handler: Handler = async (event) => {
             
             case 'generateArticleDetails': {
                 const { headline, language } = payload;
-                const systemInstruction = `You are an expert journalist writing for a bilingual newspaper. Your task is to write a concise, neutral, and informative news article (2-3 paragraphs) based on a given headline.
+                const systemInstruction = `You are an expert journalist writing for a bilingual newspaper. Your task is to provide content for a news article based on a given headline.
                 The article MUST be grounded in real-world information.
                 The article must be specific, mentioning countries, cities, company names, or people involved. Avoid vague terms like 'a local company' or 'the national team' without context.
-                You must also provide a realistic byline appropriate for the story's context, and a virality description.`;
+                You MUST format your entire response as a single, minified JSON object with NO markdown formatting (e.g., no \`\`\`json).
+                The JSON object must have these exact keys: "body" (string, 2-3 paragraphs), "byline" (string), "viralityDescription" (string).`;
                 
                 const prompt = `For the headline "${headline}" in ${language}, generate the article content.
-                The virality description must be one of: 'Fast Spreading', 'Medium Spreading', or 'Low Spreading' (or the equivalent in ${language}).`;
+                The "viralityDescription" value must be one of: 'Fast Spreading', 'Medium Spreading', or 'Low Spreading' (or the language-appropriate equivalent).`;
 
                 const response = await ai.models.generateContent({
                     model: TEXT_MODEL,
@@ -84,21 +103,11 @@ export const handler: Handler = async (event) => {
                     config: {
                         systemInstruction,
                         tools: [{googleSearch: {}}],
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: Type.OBJECT,
-                            properties: {
-                                body: { type: Type.STRING },
-                                byline: { type: Type.STRING },
-                                viralityDescription: { type: Type.STRING },
-                            },
-                            required: ["body", "byline", "viralityDescription"]
-                        }
                     }
                 });
                 
                 const groundingMetadata = response.candidates?.[0]?.groundingMetadata || null;
-                const details = JSON.parse(response.text);
+                const details = parseJsonFromMarkdown(response.text);
 
                 return jsonResponse(200, { details, groundingMetadata });
             }
