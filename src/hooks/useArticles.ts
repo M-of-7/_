@@ -242,13 +242,13 @@ export const useArticles = () => {
     }, [articles, language, updateArticle, inFlightImageJobs]);
     
     const refresh = () => {
+        setArticles([]); // Clear articles in the store for immediate feedback
         setIsNewEditionAvailable(false);
         processingDetailIds.current.clear();
         processingImageIds.current.clear();
         setInFlightDetailJobs(0);
         setInFlightImageJobs(0);
         setInitialTodayHeadlines([]);
-        setArticles([]); // Clear articles in the store for immediate feedback
         // Invalidate react-query cache to force a full refetch from the backend
         queryClient.invalidateQueries({ queryKey: ['articles'] });
     };

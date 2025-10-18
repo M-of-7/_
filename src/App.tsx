@@ -149,9 +149,13 @@ const App: React.FC = () => {
     }, [language, uiText]);
     
     const handleTopicSelect = (topicKey: string) => {
-        // Invalidate and remove older article queries to reset the infinite scroll state
-        queryClient.removeQueries({ queryKey: ['articles', 'older', language] });
+        if (activeTopic === topicKey) return; // Prevent re-fetching for the same topic
+        
+        // Setting the topic in the store now also clears the articles, triggering the loading state
         setActiveTopic(topicKey);
+        
+        // Invalidate all article queries to force a complete refetch for the new topic
+        queryClient.invalidateQueries({ queryKey: ['articles'] });
     };
 
     const filteredArticles = useMemo(() => {
@@ -204,12 +208,12 @@ const App: React.FC = () => {
                         activeTopic={activeTopic}
                         onSelect={() => {}} 
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-12 lg:col-span-8"><ArticleCardSkeleton isFeatured={true} /></div>
-                        <div className="md:col-span-6 lg:col-span-4"><ArticleCardSkeleton /></div>
-                        <div className="md:col-span-6 lg:col-span-4"><ArticleCardSkeleton /></div>
-                        <div className="md:col-span-6 lg:col-span-4"><ArticleCardSkeleton /></div>
-                        <div className="md:col-span-6 lg:col-span-4"><ArticleCardSkeleton /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="md:col-span-2 lg:col-span-2"><ArticleCardSkeleton isFeatured={true} /></div>
+                        <ArticleCardSkeleton />
+                        <ArticleCardSkeleton />
+                        <ArticleCardSkeleton />
+                        <ArticleCardSkeleton />
                     </div>
                 </div>
             );
@@ -262,7 +266,7 @@ const App: React.FC = () => {
                        <p className="mt-2 text-stone-400">{language === 'ar' ? 'حاول تحديد فئة مختلفة.' : 'Try selecting a different topic.'}</p>
                    </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredArticles.map((item, index) => {
                       const isFeatured = index === 0 && activeTopic === 'all' && searchQuery === '';
                       const refProp = (filteredArticles.length === index + 1) ? { ref: lastArticleElementRef } : {};
@@ -271,7 +275,7 @@ const App: React.FC = () => {
                          <div
                             key={item.id}
                             {...refProp}
-                            className={isFeatured ? 'md:col-span-12 lg:col-span-8' : 'md:col-span-6 lg:col-span-4'}
+                            className={isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}
                          >
                             <ArticleCard 
                                 article={item}
