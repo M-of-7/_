@@ -69,30 +69,33 @@ const ModalLoadingFallback: React.FC = () => (
   </div>
 );
 
+interface ErrorInfo {
+  title: string;
+  body: string;
+  type: 'quota' | 'config' | 'cache' | 'generic' | 'json';
+}
 
-const getFriendlyErrorMessage = (error: any, uiText: typeof UI_TEXT['en']): { title: string, body: string } => {
-    const technicalMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+const getFriendlyErrorMessage = (error: any, uiText: typeof UI_TEXT['en']): ErrorInfo => {
+    const technicalMessage = (error instanceof Error ? error.message : String(error)).toLowerCase();
     console.error("Content Generation Error:", error);
 
-    // Specific check for server-side API key configuration error
-    if (technicalMessage.includes("API_KEY environment variable not set")) {
-        return { title: uiText.config_error_title, body: uiText.config_error_gemini };
+    if (technicalMessage.includes("api_key environment variable not set")) {
+        return { title: uiText.config_error_title, body: uiText.config_error_gemini, type: 'config' };
     }
-    // Specific check for cache issue where old code fetches a route that returns HTML.
-    if (technicalMessage.includes("is not valid JSON") && technicalMessage.includes("<!DOCTYPE")) {
-        return { title: uiText.error_cache_title, body: uiText.error_cache_body };
+    if (technicalMessage.includes("<!doctype")) {
+        return { title: uiText.error_cache_title, body: uiText.error_cache_body, type: 'cache' };
     }
-    if (technicalMessage.includes("Invalid JSON response")) {
-        return { title: uiText.error_title, body: uiText.error_gemini_json };
+    if (technicalMessage.includes("invalid json")) {
+        return { title: uiText.error_title, body: uiText.error_gemini_json, type: 'json' };
     }
-    if (technicalMessage.includes("quota")) {
-        return { title: uiText.error_title, body: uiText.error_gemini_quota };
+    if (technicalMessage.includes("quota") || technicalMessage.includes("resource_exhausted") || technicalMessage.includes("429")) {
+        return { title: uiText.error_title, body: uiText.error_gemini_quota, type: 'quota' };
     }
-    if (technicalMessage.includes('API key not valid')) {
-        return { title: uiText.config_error_title, body: uiText.error_gemini_invalid_key };
+    if (technicalMessage.includes('api key not valid')) {
+        return { title: uiText.config_error_title, body: uiText.error_gemini_invalid_key, type: 'config' };
     }
     
-    return { title: uiText.error_title, body: uiText.error_subtitle };
+    return { title: uiText.error_title, body: uiText.error_subtitle, type: 'generic' };
 };
 
 const App: React.FC = () => {
@@ -129,26 +132,23 @@ const App: React.FC = () => {
     
     const uiText = useMemo(() => UI_TEXT[language], [language]);
     
-    // Error message for initial page load failures (e.g., first headline fetch)
-    const pageErrorMessage = useMemo(() => {
+    const pageErrorMessage = useMemo<ErrorInfo | null>(() => {
         if (storeErrorMessage) {
-            return { title: uiText.config_error_title, body: storeErrorMessage };
+            return { title: uiText.config_error_title, body: storeErrorMessage, type: 'config' };
         }
-        if (isError) {
+        if (isError && error) {
             return getFriendlyErrorMessage(error, uiText);
         }
         return null;
     }, [storeErrorMessage, isError, error, uiText]);
 
-    // Error message for hydration failures (e.g., fetching article details after headlines are shown)
-    const hydrationAlertMessage = useMemo(() => {
+    const hydrationAlertMessage = useMemo<ErrorInfo | null>(() => {
         if (hydrationError) {
             return getFriendlyErrorMessage({ message: hydrationError }, uiText);
         }
         return null;
     }, [hydrationError, uiText]);
 
-    // Effect to show the alert modal for hydration errors
     useEffect(() => {
         if (hydrationAlertMessage) {
             setAlertInfo({ title: hydrationAlertMessage.title, body: hydrationAlertMessage.body });
@@ -163,19 +163,16 @@ const App: React.FC = () => {
         if (hash.startsWith('#/article/')) {
           const articleId = hash.replace('#/article/', '');
           if (articleId) {
-            // Check if article is already in state
             const existingArticle = useAppStore.getState().articles.find(a => a.id === articleId);
             if (existingArticle) {
               setSelectedArticle(existingArticle);
             } else {
-              // If not, fetch it from Firestore
               const articleFromDb = await firestoreService.getArticleById(articleId);
               if (articleFromDb) {
-                updateArticle(articleFromDb); // Add to store
+                updateArticle(articleFromDb);
                 setSelectedArticle(articleFromDb);
               } else {
                  console.warn(`Article with ID ${articleId} not found.`);
-                 // Optionally, show an alert to the user
               }
             }
           }
@@ -183,7 +180,6 @@ const App: React.FC = () => {
       };
       loadArticleFromHash();
 
-      // Listen for hash changes to close modal if user navigates back
       const handleHashChange = () => {
           if (!window.location.hash.startsWith('#/article/')) {
               setSelectedArticle(null);
@@ -199,7 +195,6 @@ const App: React.FC = () => {
       if (article) {
         window.location.hash = `#/article/${article.id}`;
       } else {
-        // Clear hash if modal is closed manually
         if (window.location.hash) {
           window.history.pushState("", document.title, window.location.pathname + window.location.search);
         }
@@ -217,12 +212,8 @@ const App: React.FC = () => {
     }, [language, uiText]);
     
     const handleTopicSelect = (topicKey: string) => {
-        if (activeTopic === topicKey) return; // Prevent re-fetching for the same topic
-        
-        // Setting the topic in the store now also clears the articles, triggering the loading state
+        if (activeTopic === topicKey) return;
         setActiveTopic(topicKey);
-        
-        // Invalidate all article queries to force a complete refetch for the new topic
         queryClient.invalidateQueries({ queryKey: ['articles'] });
     };
 
@@ -239,11 +230,7 @@ const App: React.FC = () => {
     const handleAddComment = (articleId: string, commentText: string) => {
         if (!user) return;
         const newComment = { author: user.displayName || user.email || 'Anonymous', text: commentText };
-        
-        // Persist the comment to the backend
         firestoreService.addCommentToArticle(articleId, newComment);
-        
-        // Optimistically update the local state
         const articleToUpdate = articles.find(a => a.id === articleId);
         if (articleToUpdate) {
             const updated = { ...articleToUpdate, comments: [...articleToUpdate.comments, newComment] };
@@ -288,13 +275,12 @@ const App: React.FC = () => {
         }
 
         if (pageErrorMessage && articles.length === 0) {
-           const isQuotaError = pageErrorMessage?.body.includes("quota") || pageErrorMessage?.body.includes("حصتك");
            return (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <ErrorIcon className="w-20 h-20 text-red-400" />
-                <h2 className="mt-6 text-3xl font-bold text-stone-800">{pageErrorMessage?.title}</h2>
-                <p className="mt-2 max-w-lg text-lg text-stone-600">{pageErrorMessage?.body}</p>
-                {isQuotaError && (
+                <h2 className="mt-6 text-3xl font-bold text-stone-800">{pageErrorMessage.title}</h2>
+                <p className="mt-2 max-w-lg text-lg text-stone-600">{pageErrorMessage.body}</p>
+                {pageErrorMessage.type === 'quota' && (
                     <a 
                         href="https://console.cloud.google.com/billing" 
                         target="_blank" 
