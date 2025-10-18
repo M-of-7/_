@@ -8,7 +8,7 @@ interface TopicFilterProps {
   onSelect: (topicKey: string) => void;
 }
 
-const MoodFilter: React.FC<TopicFilterProps> = ({ language, activeTopic, onSelect }) => {
+const TopicFilter: React.FC<TopicFilterProps> = ({ language, activeTopic, onSelect }) => {
   const filters = TOPIC_FILTERS[language];
   const promptText = UI_TEXT[language].topic_filter_prompt;
 
@@ -37,4 +37,4 @@ const MoodFilter: React.FC<TopicFilterProps> = ({ language, activeTopic, onSelec
   );
 };
 
-export default MoodFilter;
+export default TopicFilter;
