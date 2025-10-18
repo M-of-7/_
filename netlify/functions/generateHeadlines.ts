@@ -113,7 +113,7 @@ export const handler: Handler = async (event) => {
                     prompt,
                     config: {
                         numberOfImages: 1,
-                        outputMimeType: 'image/jpeg',
+                        outputMimeType: 'image/png',
                         aspectRatio: '16:9',
                     },
                 });
@@ -123,7 +123,7 @@ export const handler: Handler = async (event) => {
                 }
 
                 const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-                const imageUrl = `data:image/jpeg;base64,${base64ImageBytes}`;
+                const imageUrl = `data:image/png;base64,${base64ImageBytes}`;
                 return jsonResponse(200, { imageUrl });
             }
 
