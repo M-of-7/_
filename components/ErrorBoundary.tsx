@@ -23,7 +23,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     console.error("Uncaught error in React component tree:", error, errorInfo);
   }
 
-  render(): ReactNode {
+  // FIX: Removed explicit ReactNode return type from render method to fix a TypeScript type resolution issue where `this.props` was not found.
+  render() {
     if (this.state.hasError) {
       const isRTL = document.documentElement.dir === 'rtl';
       // You can render any custom fallback UI

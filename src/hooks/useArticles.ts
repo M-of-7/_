@@ -23,7 +23,7 @@ const generateArticleId = (date: string, headline: string): string => {
 };
 
 // Concurrency settings for performance tuning to avoid rate limiting.
-const MAX_CONCURRENT_DETAIL_JOBS = 2; // Was 4
+const MAX_CONCURRENT_DETAIL_JOBS = 1; // Was 2
 const MAX_CONCURRENT_IMAGE_JOBS = 1; // Was 2
 
 /**
