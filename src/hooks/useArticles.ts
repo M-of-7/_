@@ -166,7 +166,7 @@ export const useArticles = () => {
             }
         }
 
-    }, [todayArticles, olderArticlesPages, updateMultipleArticles, activeTopic]);
+    }, [todayArticles, olderArticlesPages, articles, updateMultipleArticles, activeTopic, initialTodayHeadlines, setInitialTodayHeadlines]);
 
 
     // Effect to process shell articles (fetching details only)
