@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, lazy, Suspense, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import Header from './components/Header';
 import ArticleCard from './components/ArticleCard';
@@ -69,30 +69,33 @@ const ModalLoadingFallback: React.FC = () => (
   </div>
 );
 
+interface ErrorInfo {
+  title: string;
+  body: string;
+  type: 'quota' | 'config' | 'cache' | 'generic' | 'json';
+}
 
-const getFriendlyErrorMessage = (error: any, uiText: typeof UI_TEXT['en']): { title: string, body: string } => {
-    const technicalMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+const getFriendlyErrorMessage = (error: any, uiText: typeof UI_TEXT['en']): ErrorInfo => {
+    const technicalMessage = (error instanceof Error ? error.message : String(error)).toLowerCase();
     console.error("Content Generation Error:", error);
 
-    // Specific check for server-side API key configuration error
-    if (technicalMessage.includes("API_KEY environment variable not set")) {
-        return { title: uiText.config_error_title, body: uiText.config_error_gemini };
+    if (technicalMessage.includes("api_key environment variable not set")) {
+        return { title: uiText.config_error_title, body: uiText.config_error_gemini, type: 'config' };
     }
-    // Specific check for cache issue where old code fetches a route that returns HTML.
-    if (technicalMessage.includes("is not valid JSON") && technicalMessage.includes("<!DOCTYPE")) {
-        return { title: uiText.error_cache_title, body: uiText.error_cache_body };
+    if (technicalMessage.includes("<!doctype")) {
+        return { title: uiText.error_cache_title, body: uiText.error_cache_body, type: 'cache' };
     }
-    if (technicalMessage.includes("Invalid JSON response")) {
-        return { title: uiText.error_title, body: uiText.error_gemini_json };
+    if (technicalMessage.includes("invalid json")) {
+        return { title: uiText.error_title, body: uiText.error_gemini_json, type: 'json' };
     }
-    if (technicalMessage.includes("quota")) {
-        return { title: uiText.error_title, body: uiText.error_gemini_quota };
+    if (technicalMessage.includes("quota") || technicalMessage.includes("resource_exhausted") || technicalMessage.includes("429")) {
+        return { title: uiText.error_title, body: uiText.error_gemini_quota, type: 'quota' };
     }
-    if (technicalMessage.includes('API key not valid')) {
-        return { title: uiText.config_error_title, body: uiText.error_gemini_invalid_key };
+    if (technicalMessage.includes('api key not valid')) {
+        return { title: uiText.config_error_title, body: uiText.error_gemini_invalid_key, type: 'config' };
     }
     
-    return { title: uiText.error_title, body: uiText.error_subtitle };
+    return { title: uiText.error_title, body: uiText.error_subtitle, type: 'generic' };
 };
 
 const App: React.FC = () => {
@@ -112,6 +115,7 @@ const App: React.FC = () => {
         updateArticle,
         activeTopic,
         setActiveTopic,
+        hydrationError,
     } = useAppStore();
 
     const queryClient = useQueryClient();
@@ -128,16 +132,75 @@ const App: React.FC = () => {
     
     const uiText = useMemo(() => UI_TEXT[language], [language]);
     
-    const errorMessage = useMemo(() => {
+    const pageErrorMessage = useMemo<ErrorInfo | null>(() => {
         if (storeErrorMessage) {
-            // Generic handling for any store error (e.g., Firebase config if it's re-enabled)
-            return { title: uiText.config_error_title, body: storeErrorMessage };
+            return { title: uiText.config_error_title, body: storeErrorMessage, type: 'config' };
         }
-        if (isError) {
+        if (isError && error) {
             return getFriendlyErrorMessage(error, uiText);
         }
         return null;
     }, [storeErrorMessage, isError, error, uiText]);
+
+    const hydrationAlertMessage = useMemo<ErrorInfo | null>(() => {
+        if (hydrationError) {
+            return getFriendlyErrorMessage({ message: hydrationError }, uiText);
+        }
+        return null;
+    }, [hydrationError, uiText]);
+
+    useEffect(() => {
+        if (hydrationAlertMessage) {
+            setAlertInfo({ title: hydrationAlertMessage.title, body: hydrationAlertMessage.body });
+        }
+    }, [hydrationAlertMessage]);
+
+
+    // Handle deep linking to articles via URL hash
+    useEffect(() => {
+      const loadArticleFromHash = async () => {
+        const hash = window.location.hash;
+        if (hash.startsWith('#/article/')) {
+          const articleId = hash.replace('#/article/', '');
+          if (articleId) {
+            const existingArticle = useAppStore.getState().articles.find(a => a.id === articleId);
+            if (existingArticle) {
+              setSelectedArticle(existingArticle);
+            } else {
+              const articleFromDb = await firestoreService.getArticleById(articleId);
+              if (articleFromDb) {
+                updateArticle(articleFromDb);
+                setSelectedArticle(articleFromDb);
+              } else {
+                 console.warn(`Article with ID ${articleId} not found.`);
+              }
+            }
+          }
+        }
+      };
+      loadArticleFromHash();
+
+      const handleHashChange = () => {
+          if (!window.location.hash.startsWith('#/article/')) {
+              setSelectedArticle(null);
+          }
+      };
+      window.addEventListener('hashchange', handleHashChange);
+      return () => window.removeEventListener('hashchange', handleHashChange);
+
+    }, [updateArticle]);
+
+
+    const handleSelectArticle = (article: Article | null) => {
+      if (article) {
+        window.location.hash = `#/article/${article.id}`;
+      } else {
+        if (window.location.hash) {
+          window.history.pushState("", document.title, window.location.pathname + window.location.search);
+        }
+      }
+      setSelectedArticle(article);
+    };
 
 
     useEffect(() => {
@@ -145,29 +208,12 @@ const App: React.FC = () => {
         document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
         document.title = uiText.title;
         setSearchQuery('');
-        setSelectedArticle(null);
+        handleSelectArticle(null);
     }, [language, uiText]);
-
-    // Infinite scroll implementation - moved to top level to obey Rules of Hooks
-    const observer = useRef<IntersectionObserver>();
-    const lastArticleElementRef = useCallback((node: HTMLDivElement) => {
-        if (isFetchingNextPage) return;
-        if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasNextPage) {
-                fetchNextPage();
-            }
-        });
-        if (node) observer.current.observe(node);
-    }, [isFetchingNextPage, fetchNextPage, hasNextPage]);
     
     const handleTopicSelect = (topicKey: string) => {
-        if (activeTopic === topicKey) return; // Prevent re-fetching for the same topic
-        
-        // Setting the topic in the store now also clears the articles, triggering the loading state
+        if (activeTopic === topicKey) return;
         setActiveTopic(topicKey);
-        
-        // Invalidate all article queries to force a complete refetch for the new topic
         queryClient.invalidateQueries({ queryKey: ['articles'] });
     };
 
@@ -184,11 +230,7 @@ const App: React.FC = () => {
     const handleAddComment = (articleId: string, commentText: string) => {
         if (!user) return;
         const newComment = { author: user.displayName || user.email || 'Anonymous', text: commentText };
-        
-        // Persist the comment to the backend
         firestoreService.addCommentToArticle(articleId, newComment);
-        
-        // Optimistically update the local state
         const articleToUpdate = articles.find(a => a.id === articleId);
         if (articleToUpdate) {
             const updated = { ...articleToUpdate, comments: [...articleToUpdate.comments, newComment] };
@@ -232,14 +274,13 @@ const App: React.FC = () => {
             );
         }
 
-        if (appStatus === 'error' || (isError && articles.length === 0)) {
-           const isQuotaError = errorMessage?.body.includes("quota") || errorMessage?.body.includes("حصتك");
+        if (pageErrorMessage && articles.length === 0) {
            return (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <ErrorIcon className="w-20 h-20 text-red-400" />
-                <h2 className="mt-6 text-3xl font-bold text-stone-800">{errorMessage?.title}</h2>
-                <p className="mt-2 max-w-lg text-lg text-stone-600">{errorMessage?.body}</p>
-                {isQuotaError && (
+                <h2 className="mt-6 text-3xl font-bold text-stone-800">{pageErrorMessage.title}</h2>
+                <p className="mt-2 max-w-lg text-lg text-stone-600">{pageErrorMessage.body}</p>
+                {pageErrorMessage.type === 'quota' && (
                     <a 
                         href="https://console.cloud.google.com/billing" 
                         target="_blank" 
@@ -269,25 +310,6 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredArticles.map((item, index) => {
                       const isFeatured = index === 0 && activeTopic === 'all' && searchQuery === '';
-                      
-                      if (filteredArticles.length === index + 1) {
-                        return (
-                           <div
-                              key={item.id}
-                              ref={lastArticleElementRef}
-                              className={isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}
-                           >
-                              <ArticleCard 
-                                  article={item}
-                                  onReadMore={setSelectedArticle}
-                                  categoryText={CATEGORY_MAP[language][item.category] || item.category}
-                                  uiText={uiText}
-                                  isFeatured={isFeatured}
-                              />
-                           </div>
-                        );
-                      }
-                      
                       return (
                          <div
                             key={item.id}
@@ -295,7 +317,7 @@ const App: React.FC = () => {
                          >
                             <ArticleCard 
                                 article={item}
-                                onReadMore={setSelectedArticle}
+                                onReadMore={handleSelectArticle}
                                 categoryText={CATEGORY_MAP[language][item.category] || item.category}
                                 uiText={uiText}
                                 isFeatured={isFeatured}
@@ -306,14 +328,17 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {isFetchingNextPage && (
-                <div className="flex justify-center my-8">
-                    <div className="flex items-center justify-center gap-2 text-stone-600">
-                        <SpinnerIcon className="w-6 h-6" />
-                        <span>{uiText.loading_older_articles}</span>
-                    </div>
-                </div>
-              )}
+              <div className="flex justify-center my-8">
+                  {hasNextPage && !isLoading && (
+                    <button
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                        className="px-6 py-3 bg-stone-800 text-white font-bold rounded-lg hover:bg-stone-900 disabled:bg-stone-400 disabled:cursor-wait transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                    >
+                        {isFetchingNextPage ? uiText.loading_more : uiText.load_more_articles}
+                    </button>
+                  )}
+              </div>
 
               {!hasNextPage && articles.length > 0 && (
                 <div className="text-center my-10 p-6 bg-stone-200/70 rounded-lg max-w-4xl mx-auto">
@@ -362,7 +387,7 @@ const App: React.FC = () => {
             <Suspense fallback={<ModalLoadingFallback />}>
                 <ArticleModal 
                     article={selectedArticle} 
-                    onClose={() => setSelectedArticle(null)} 
+                    onClose={() => handleSelectArticle(null)} 
                     language={language}
                     isLoggedIn={!!user}
                     onAddComment={handleAddComment}

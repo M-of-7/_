@@ -1,23 +1,17 @@
 import React, { ErrorInfo, ReactNode } from 'react';
 
-// FIX: Define an explicit interface for props to improve type safety and potentially resolve type inference issues.
 interface ErrorBoundaryProps {
-  children?: ReactNode;
+  // This component does not have any specific props besides `children`.
+  children: ReactNode;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-// FIX: Changed Component to React.Component to resolve type inference issue.
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // FIX: Using a constructor to initialize state. While class field initialization is modern,
-  // this explicitly calls super(props) which can resolve type inference issues with `this.props`
-  // in some toolchain configurations.
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  // FIX: Replaced constructor-based state initialization with a class property to resolve type errors.
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
     // Update state so the next render will show the fallback UI.
@@ -29,8 +23,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     console.error("Uncaught error in React component tree:", error, errorInfo);
   }
 
-  // FIX: Add explicit return type to the render method to aid type inference.
-  render(): ReactNode {
+  // FIX: Converted to an arrow function to ensure `this` is correctly bound, resolving potential type inference issues with instance properties like `props`.
+  render = () => {
     if (this.state.hasError) {
       const isRTL = document.documentElement.dir === 'rtl';
       // You can render any custom fallback UI

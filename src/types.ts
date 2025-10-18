@@ -30,7 +30,6 @@ export interface UnprocessedDetails {
   body: string;
   byline: string;
   viralityDescription: string;
-  sources?: { title: string; uri: string }[];
 }
 
 
@@ -42,4 +41,12 @@ export interface DailyBriefing {
         topic: string;
         category: Category;
     }[];
+}
+
+// Types for Google Search Grounding metadata
+interface GroundingChunk {
+  web: { title: string; uri: string };
+}
+export interface GroundingMetadata {
+  groundingChunks: GroundingChunk[];
 }

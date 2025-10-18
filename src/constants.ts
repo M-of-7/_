@@ -67,7 +67,8 @@ export const UI_TEXT = {
     sources: 'Sources',
     topic_filter_prompt: 'What are you interested in today?',
     loading_older_articles: 'Loading older articles...',
-    load_older_articles: 'Click to load older articles',
+    load_more_articles: 'Load More Articles',
+    loading_more: 'Loading...',
     new_edition_available: 'New edition available!',
     click_to_refresh: 'Click to refresh',
     login_failed_title: 'Login Failed',
@@ -117,7 +118,8 @@ export const UI_TEXT = {
     sources: 'المصادر',
     topic_filter_prompt: 'ما الذي يثير اهتمامك اليوم؟',
     loading_older_articles: 'جاري تحميل المقالات الأقدم...',
-    load_older_articles: 'اضغط لتحميل المقالات الأقدم',
+    load_more_articles: 'تحميل المزيد من المقالات',
+    loading_more: 'جاري التحميل...',
     new_edition_available: 'إصدار جديد متوفر!',
     click_to_refresh: 'اضغط للتحديث',
     login_failed_title: 'فشل تسجيل الدخول',
@@ -125,29 +127,6 @@ export const UI_TEXT = {
     ok_button: 'حسناً',
     end_of_feed_title: "لقد وصلت إلى نهاية البث",
     end_of_feed_body: "يحتوي أرشيفنا المباشر حاليًا على مقالات من آخر 30 يومًا.",
-  }
-};
-
-export const DYNAMIC_UI_TEXT = {
-  en: {
-    fetching_headlines: (date: string) => `Fetching headlines for ${date}`,
-    contacting_news_desk: 'Contacting the news desk...',
-    writing_articles: (day: string) => `Writing articles for ${day}`,
-    crafting_stories: 'Our AI is crafting the stories...',
-    developing_photos: (day: string) => `Developing photos for ${day}`,
-    bringing_stories_to_life: 'Bringing the stories to life...',
-    finding_mood_stories: (mood: string) => `Finding "${mood}" stories...`,
-    curating_feed: 'Our AI is curating your feed.',
-  },
-  ar: {
-    fetching_headlines: (date: string) => `جاري جلب العناوين الرئيسية ليوم ${date}`,
-    contacting_news_desk: 'جاري الاتصال بمكتب الأخبار...',
-    writing_articles: (day: string) => `جاري كتابة مقالات لـ ${day}`,
-    crafting_stories: 'يعمل الذكاء الاصطناعي على صياغة القصص...',
-    developing_photos: (day: string) => `جاري تحميض الصور لـ ${day}`,
-    bringing_stories_to_life: 'إضفاء الحيوية على القصص...',
-    finding_mood_stories: (mood: string) => `جاري البحث عن قصص "${mood}"...`,
-    curating_feed: 'يعمل الذكاء الاصطناعي على تنظيم خلاصتك.',
   }
 };
 

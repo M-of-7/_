@@ -12,7 +12,8 @@ const root = createRoot(container);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 0, // Fetch data on every load to ensure freshness
+      refetchOnMount: true, // Ensure queries refetch when components mount
       refetchOnWindowFocus: true, // Refetch on window focus for fresh data
     },
   },
