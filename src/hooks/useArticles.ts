@@ -151,22 +151,20 @@ export const useArticles = () => {
         const allFetchedArticles = [...todayArticles, ...olderArticlesFlat].filter(Boolean);
         
         if (allFetchedArticles.length > 0) {
-            const articlesMap = new Map<string, Article>(articles.map(a => [a.id, a]));
-            allFetchedArticles.forEach(fetchedArticle => {
-                const existing = articlesMap.get(fetchedArticle.id);
-                // Merge fetched data with any existing data, prioritizing existing full data over fetched shells.
-                articlesMap.set(fetchedArticle.id, { ...fetchedArticle, ...existing });
-            });
+            // Pass the raw fetched articles to the store.
+            // The store's update action is now responsible for merging them correctly
+            // with existing state and preventing unnecessary updates.
+            updateMultipleArticles(allFetchedArticles);
 
-            const newArticleList = Array.from(articlesMap.values());
-            updateMultipleArticles(newArticleList);
-
-            if (initialTodayHeadlines.length === 0 && todayArticles.length > 0 && activeTopic === 'all') {
+            // This part also needs the latest state to avoid race conditions.
+            if (useAppStore.getState().initialTodayHeadlines.length === 0 && todayArticles.length > 0 && activeTopic === 'all') {
                 setInitialTodayHeadlines(todayArticles.map(a => a.headline));
             }
         }
-
-    }, [todayArticles, olderArticlesPages, articles, updateMultipleArticles, activeTopic, initialTodayHeadlines, setInitialTodayHeadlines]);
+    // FIX: Removed `articles` and `initialTodayHeadlines` from the dependency array.
+    // This effect should only run when the raw data from React Query (`todayArticles`, `olderArticlesPages`) changes.
+    // Depending on `articles` caused an infinite loop because this effect itself updates the articles.
+    }, [todayArticles, olderArticlesPages, updateMultipleArticles, activeTopic, setInitialTodayHeadlines]);
 
 
     // Effect to process shell articles (fetching details only)

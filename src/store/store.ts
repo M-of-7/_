@@ -112,10 +112,27 @@ export const useAppStore = create<AppState>((set) => ({
   }),
   updateMultipleArticles: (updatedArticles) => set(state => {
       const articlesMap = new Map<string, Article>(state.articles.map(a => [a.id, a]));
+      let hasChanged = false;
+
       updatedArticles.forEach(updated => {
-          const existing = articlesMap.get(updated.id) || {};
-          articlesMap.set(updated.id, { ...existing, ...updated });
+          const existing = articlesMap.get(updated.id);
+          // Merge logic: new data overwrites old, but preserves fields not present in new data.
+          const merged = { ...(existing || {}), ...updated };
+
+          // Check if it's a new article or if the article has been substantively updated.
+          if (!existing || JSON.stringify(existing) !== JSON.stringify(merged)) {
+            articlesMap.set(updated.id, merged);
+            hasChanged = true;
+          }
       });
+      
+      // FIX: Added a guard clause. If no articles were actually added or changed,
+      // return the original state object (`state`) to prevent an unnecessary re-render.
+      // This is a crucial fix to prevent infinite update loops.
+      if (!hasChanged) {
+        return state;
+      }
+
       const sorted = sortArticles(Array.from(articlesMap.values()));
       saveToLocalStorage(sorted);
       return {
