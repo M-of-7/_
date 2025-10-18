@@ -1,5 +1,3 @@
-import type { Language } from '../types';
-
 /**
  * Parses a JSON string, safely handling cases where the JSON is embedded
  * within a Markdown code block (```json ... ```).
@@ -20,28 +18,4 @@ export const parseJsonFromMarkdown = <T>(text: string): T => {
     console.error("Failed to parse JSON from text:", text);
     throw new Error("Invalid JSON response from API.");
   }
-};
-
-/**
- * Generates a user-friendly date label (e.g., 'Today', 'Yesterday', or a formatted date).
- * @param date The date object for the article.
- * @param language The current language ('en' or 'ar').
- * @returns A formatted string.
- */
-export const getDayLabel = (date: Date, language: Language): string => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    
-    const dateOnly = new Date(date);
-    dateOnly.setHours(0, 0, 0, 0);
-
-    if (dateOnly.getTime() === today.getTime()) {
-        return language === 'ar' ? 'اليوم' : 'Today';
-    }
-    if (dateOnly.getTime() === yesterday.getTime()) {
-        return language === 'ar' ? 'الأمس' : 'Yesterday';
-    }
-    return new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
 };

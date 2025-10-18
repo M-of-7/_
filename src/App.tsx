@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense, useRef, useCallback } from 'react';
 import Header from './components/Header';
 import ArticleCard from './components/ArticleCard';
 import LoadingOverlay from './components/LoadingOverlay';
@@ -14,7 +14,6 @@ import { useAuth } from './hooks/useAuth';
 import { useArticles } from './hooks/useArticles';
 import { useAppInitializer } from './hooks/useAppInitializer';
 import ArticleCardSkeleton from './components/ArticleCardSkeleton';
-import { getDayLabel } from './services/utils';
 
 // Lazy load the ArticleModal component for code splitting
 const ArticleModal = lazy(() => import('./components/ArticleModal'));
@@ -200,10 +199,7 @@ const App: React.FC = () => {
                         activeTopic={activeTopic}
                         onSelect={() => {}} 
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        <ArticleCardSkeleton isFeatured={true} />
-                        <ArticleCardSkeleton />
-                        <ArticleCardSkeleton />
+                    <div className="max-w-4xl mx-auto space-y-8">
                         <ArticleCardSkeleton />
                         <ArticleCardSkeleton />
                         <ArticleCardSkeleton />
@@ -234,23 +230,18 @@ const App: React.FC = () => {
            );
         }
 
-        const handleLoadMore = () => {
-            if (hasNextPage && !isFetchingNextPage) {
-                fetchNextPage();
-            }
-        };
-
-        const articlesByDay = useMemo(() => {
-            return filteredArticles.reduce((acc, article) => {
-                const dayKey = article.date.split('T')[0];
-                if (!acc[dayKey]) {
-                    acc[dayKey] = [];
+        // Infinite scroll implementation
+        const observer = useRef<IntersectionObserver>();
+        const lastArticleElementRef = useCallback(node => {
+            if (isFetchingNextPage) return;
+            if (observer.current) observer.current.disconnect();
+            observer.current = new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting && hasNextPage) {
+                    fetchNextPage();
                 }
-                acc[dayKey].push(article);
-                return acc;
-            }, {} as Record<string, Article[]>);
-        }, [filteredArticles]);
-        const sortedDays = useMemo(() => Object.keys(articlesByDay).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()), [articlesByDay]);
+            });
+            if (node) observer.current.observe(node);
+        }, [isFetchingNextPage, fetchNextPage, hasNextPage]);
         
         return (
           <div className="container mx-auto p-4 lg:p-6">
@@ -265,54 +256,37 @@ const App: React.FC = () => {
                        <p className="mt-2 text-stone-400">{language === 'ar' ? 'حاول تحديد فئة مختلفة.' : 'Try selecting a different topic.'}</p>
                    </div>
               ) : (
-                <div className="space-y-12">
-                  {sortedDays.map((day, dayIndex) => (
-                    <section key={day} aria-labelledby={`day-header-${day}`}>
-                      <h2 
-                        id={`day-header-${day}`}
-                        className={`text-2xl font-black tracking-wide pb-2 mb-6 border-b-2 border-stone-300 ${language === 'ar' ? 'font-serif-ar' : 'font-header-en'}`}
-                      >
-                        {getDayLabel(new Date(day), language)}
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {articlesByDay[day].map((item, index) => {
-                            const isFeatured = dayIndex === 0 && index === 0 && !searchQuery && activeTopic === 'all' && filteredArticles.length > 3;
-                            return (
-                                <ArticleCard 
-                                    key={item.id}
-                                    article={item}
-                                    onReadMore={setSelectedArticle}
-                                    categoryText={CATEGORY_MAP[language][item.category] || item.category}
-                                    uiText={uiText}
-                                    isFeatured={isFeatured}
-                                />
-                            );
-                        })}
-                      </div>
-                    </section>
-                  ))}
+                <div className="max-w-4xl mx-auto space-y-8">
+                  {filteredArticles.map((item, index) => {
+                      const card = (
+                          <ArticleCard 
+                              key={item.id}
+                              article={item}
+                              onReadMore={setSelectedArticle}
+                              categoryText={CATEGORY_MAP[language][item.category] || item.category}
+                              uiText={uiText}
+                          />
+                      );
+
+                      if (filteredArticles.length === index + 1) {
+                        return <div ref={lastArticleElementRef} key={item.id}>{card}</div>;
+                      }
+                      return card;
+                  })}
                 </div>
               )}
-              {hasNextPage && (
+
+              {isFetchingNextPage && (
                 <div className="flex justify-center my-8">
-                    <button
-                        onClick={handleLoadMore}
-                        disabled={isFetchingNextPage}
-                        className="bg-stone-800 text-white font-bold py-2 px-6 rounded-lg hover:bg-stone-900 disabled:bg-stone-400 transition-colors"
-                    >
-                        {isFetchingNextPage ? (
-                            <div className="flex items-center justify-center gap-2 w-48">
-                                <SpinnerIcon className="w-5 h-5" />
-                                <span>{uiText.loading_older_articles}</span>
-                            </div>
-                        ) : (
-                            <span className="w-48 block">{uiText.load_older_articles}</span>
-                        )}
-                    </button>
+                    <div className="flex items-center justify-center gap-2 text-stone-600">
+                        <SpinnerIcon className="w-6 h-6" />
+                        <span>{uiText.loading_older_articles}</span>
+                    </div>
                 </div>
               )}
+
               {!hasNextPage && articles.length > 0 && (
-                <div className="text-center my-10 p-6 bg-stone-200/70 rounded-lg">
+                <div className="text-center my-10 p-6 bg-stone-200/70 rounded-lg max-w-4xl mx-auto">
                     <h3 className="text-2xl font-bold text-stone-800">{uiText.end_of_feed_title}</h3>
                     <p className="mt-2 text-stone-600">{uiText.end_of_feed_body}</p>
                 </div>

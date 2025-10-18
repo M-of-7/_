@@ -8,7 +8,6 @@ interface ArticleCardProps {
   onReadMore: (article: Article) => void;
   categoryText: string;
   uiText: typeof UI_TEXT['en'];
-  isFeatured?: boolean;
 }
 
 const getViralityStyle = (description: string): { color: string; key: 'fast_spreading' | 'medium_spreading' | 'low_spreading' } => {
@@ -17,8 +16,8 @@ const getViralityStyle = (description: string): { color: string; key: 'fast_spre
     return { color: 'text-stone-500', key: 'low_spreading' };
 };
 
-const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, categoryText, uiText, isFeatured = false }) => {
-  const bodySnippet = article.body ? article.body.split('\n')[0].substring(0, isFeatured ? 200 : 100) + '...' : '';
+const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, categoryText, uiText }) => {
+  const bodySnippet = article.body ? article.body.split('\n')[0].substring(0, 150) + '...' : '';
   const { color: viralityColorClass, key: viralityKey } = getViralityStyle(article.viralityDescription || '');
   const viralityDisplayText = uiText[viralityKey] || article.viralityDescription;
   const isRTL = document.documentElement.dir === 'rtl';
@@ -31,8 +30,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
   }, [article.date, language]);
 
   const cardClasses = `
-    ${isFeatured ? 'md:col-span-2 lg:col-span-2 xl:col-span-2' : 'col-span-1'}
-    bg-white flex flex-col cursor-pointer group transform hover:-translate-y-1 transition-transform duration-300 shadow-md hover:shadow-xl rounded-lg overflow-hidden
+    bg-white flex flex-col sm:flex-row cursor-pointer group transform hover:-translate-y-1 transition-transform duration-300 shadow-md hover:shadow-xl rounded-lg overflow-hidden w-full
   `;
 
   return (
@@ -42,7 +40,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
       role="article"
       aria-labelledby={`headline-${article.id}`}
     >
-      <div className="relative h-48 w-full overflow-hidden">
+      <div className="relative sm:w-1/3 h-48 sm:h-auto w-full overflow-hidden flex-shrink-0">
         {article.imageUrl ? (
             <>
                 <picture>
@@ -50,7 +48,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
                   <img 
                       src={article.imageUrl} 
                       alt={article.headline} 
-                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                      className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" 
                       loading="lazy"
                       width="1280"
                       height="720"
@@ -59,16 +57,16 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
                 <div className="absolute inset-0 bg-black/40"></div>
             </>
         ) : (
-            <div className="h-full w-full bg-stone-200 animate-pulse"></div>
+            <div className="absolute inset-0 h-full w-full bg-stone-200 animate-pulse"></div>
         )}
         <span className="absolute top-2 left-2 rtl:left-auto rtl:right-2 bg-red-700 text-white text-[10px] font-bold uppercase px-2 py-1 rounded z-10">
           {categoryText}
         </span>
       </div>
-      <div className="p-4 flex flex-col flex-grow">
+      <div className="p-4 flex flex-col flex-grow w-full sm:w-2/3">
         <h2 
             id={`headline-${article.id}`}
-            className={`font-bold text-stone-900 ${isFeatured ? 'text-2xl' : 'text-xl'} ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}
+            className={`font-bold text-stone-900 text-xl lg:text-2xl ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}
         >
             {article.headline}
         </h2>
