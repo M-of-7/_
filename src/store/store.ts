@@ -116,10 +116,9 @@ export const useAppStore = create<AppState>((set) => ({
 
       updatedArticles.forEach(updated => {
           const existing = articlesMap.get(updated.id);
-          // FIX: Reversing the spread operator order to ensure that existing,
-          // more detailed article data (from `existing`) is not overwritten
-          // by the shell article data from the fetch (from `updated`). This
-          // prevents an infinite re-render loop.
+          // By spreading the existing article last, we ensure that its more
+          // detailed data (like a body or imageURL) is not overwritten
+          // by the shell article data from the fetch.
           const merged = { ...updated, ...(existing || {}) };
 
           // Check if it's a new article or if the article has been substantively updated.

@@ -128,29 +128,6 @@ export const UI_TEXT = {
   }
 };
 
-export const DYNAMIC_UI_TEXT = {
-  en: {
-    fetching_headlines: (date: string) => `Fetching headlines for ${date}`,
-    contacting_news_desk: 'Contacting the news desk...',
-    writing_articles: (day: string) => `Writing articles for ${day}`,
-    crafting_stories: 'Our AI is crafting the stories...',
-    developing_photos: (day: string) => `Developing photos for ${day}`,
-    bringing_stories_to_life: 'Bringing the stories to life...',
-    finding_mood_stories: (mood: string) => `Finding "${mood}" stories...`,
-    curating_feed: 'Our AI is curating your feed.',
-  },
-  ar: {
-    fetching_headlines: (date: string) => `جاري جلب العناوين الرئيسية ليوم ${date}`,
-    contacting_news_desk: 'جاري الاتصال بمكتب الأخبار...',
-    writing_articles: (day: string) => `جاري كتابة مقالات لـ ${day}`,
-    crafting_stories: 'يعمل الذكاء الاصطناعي على صياغة القصص...',
-    developing_photos: (day: string) => `جاري تحميض الصور لـ ${day}`,
-    bringing_stories_to_life: 'إضفاء الحيوية على القصص...',
-    finding_mood_stories: (mood: string) => `جاري البحث عن قصص "${mood}"...`,
-    curating_feed: 'يعمل الذكاء الاصطناعي على تنظيم خلاصتك.',
-  }
-};
-
 export const CATEGORY_MAP = {
   en: {
     World: 'World News',
