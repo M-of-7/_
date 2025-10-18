@@ -11,8 +11,11 @@ interface ErrorBoundaryState {
 
 // FIX: Explicitly defined `children` in `ErrorBoundaryProps` and removed `React.PropsWithChildren` wrapper to resolve a type inference issue.
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // FIX: Initializing state with a class field. The constructor-based initialization was causing type errors.
-  state: ErrorBoundaryState = { hasError: false };
+  // FIX: The error "Property 'props' does not exist on type 'ErrorBoundary'" suggests a potential issue with how the TypeScript compiler is interpreting the 'this' context within the class component. Reverting to the standard constructor for state initialization is a more robust pattern that can resolve such type inference problems, which may arise from misconfigured class field transforms.
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
     // Update state so the next render will show the fallback UI.

@@ -22,9 +22,9 @@ const generateArticleId = (date: string, headline: string): string => {
   return `${datePart}-${headlineHash}`;
 };
 
-// Concurrency settings for performance tuning
-const MAX_CONCURRENT_DETAIL_JOBS = 4; // Fetch text content faster
-const MAX_CONCURRENT_IMAGE_JOBS = 2; // Generate images in the background without overwhelming the API
+// Concurrency settings for performance tuning to avoid rate limiting.
+const MAX_CONCURRENT_DETAIL_JOBS = 2; // Was 4
+const MAX_CONCURRENT_IMAGE_JOBS = 1; // Was 2
 
 /**
  * Fetches articles for a given day, utilizing Firestore as a cache.
