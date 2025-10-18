@@ -1,22 +1,18 @@
 import React, { ErrorInfo, ReactNode } from 'react';
 
-interface ErrorBoundaryProps {
-  children: ReactNode;
-}
-
 interface ErrorBoundaryState {
   hasError: boolean;
 }
 
 // FIX: Changed Component to React.Component to resolve type inference issue.
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, ErrorBoundaryState> {
   // FIX: Refactored to use class field for state initialization.
   // This is a more modern and robust syntax that avoids potential issues with `this` in the constructor.
   state: ErrorBoundaryState = { hasError: false };
 
   // FIX: The constructor was restored. Its removal caused a TypeScript error where `this.props` was not recognized.
   // Calling `super(props)` is essential for initializing `this.props` in the component instance.
-  constructor(props: ErrorBoundaryProps) {
+  constructor(props: React.PropsWithChildren<{}>) {
     super(props);
   }
 
