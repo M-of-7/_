@@ -116,8 +116,11 @@ export const useAppStore = create<AppState>((set) => ({
 
       updatedArticles.forEach(updated => {
           const existing = articlesMap.get(updated.id);
-          // Merge logic: new data overwrites old, but preserves fields not present in new data.
-          const merged = { ...(existing || {}), ...updated };
+          // FIX: Reversing the spread operator order to ensure that existing,
+          // more detailed article data (from `existing`) is not overwritten
+          // by the shell article data from the fetch (from `updated`). This
+          // prevents an infinite re-render loop.
+          const merged = { ...updated, ...(existing || {}) };
 
           // Check if it's a new article or if the article has been substantively updated.
           if (!existing || JSON.stringify(existing) !== JSON.stringify(merged)) {
@@ -126,9 +129,8 @@ export const useAppStore = create<AppState>((set) => ({
           }
       });
       
-      // FIX: Added a guard clause. If no articles were actually added or changed,
-      // return the original state object (`state`) to prevent an unnecessary re-render.
-      // This is a crucial fix to prevent infinite update loops.
+      // If no articles were actually added or changed,
+      // return the original state object to prevent an unnecessary re-render.
       if (!hasChanged) {
         return state;
       }

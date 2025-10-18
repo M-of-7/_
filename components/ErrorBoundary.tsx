@@ -1,14 +1,15 @@
 import React, { ErrorInfo, ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
-  children?: ReactNode;
+  // This component does not have any specific props besides `children`, which is handled by `React.PropsWithChildren`.
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+// FIX: Using React.PropsWithChildren to correctly type the 'children' prop, which resolves the error about 'props' not existing on the type.
+class ErrorBoundary extends React.Component<React.PropsWithChildren<ErrorBoundaryProps>, ErrorBoundaryState> {
   // FIX: Initializing state with a class field. The constructor-based initialization was causing type errors.
   state: ErrorBoundaryState = { hasError: false };
 
