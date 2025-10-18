@@ -53,7 +53,7 @@ export const handler: Handler = async (event) => {
                     : `Generate headlines for the '${topic}' category ONLY.`;
 
                 const systemInstruction = `You are a world-class news editor for a bilingual newspaper (English and Arabic).
-                Your task is to generate 10 compelling, diverse, and factual news headlines.
+                Your task is to generate 5 compelling, diverse, and factual news headlines.
                 IMPORTANT: You must avoid creating multiple headlines for the same underlying news event to ensure variety.
                 Headlines MUST be specific and avoid ambiguity (e.g., instead of 'National Team Wins', specify the country like 'Brazil's National Team Wins Soccer Championship').
                 For each headline, provide a suitable category from this list: ${CATEGORIES.join(', ')}.
