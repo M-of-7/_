@@ -6,7 +6,7 @@ import MoodFilter from './components/MoodFilter';
 import SpinnerIcon from './components/icons/SpinnerIcon';
 import ErrorIcon from './components/icons/ErrorIcon';
 import type { Article, Language } from './types';
-import { UI_TEXT, CATEGORY_MAP, DYNAMIC_UI_TEXT } from './constants';
+import { UI_TEXT, CATEGORY_MAP } from './constants';
 import { authService } from './services/authService';
 import { firestoreService } from './services/firestoreService';
 import { useAppStore } from './store/store';
@@ -14,6 +14,7 @@ import { useAuth } from './hooks/useAuth';
 import { useArticles } from './hooks/useArticles';
 import { useAppInitializer } from './hooks/useAppInitializer';
 import ArticleCardSkeleton from './components/ArticleCardSkeleton';
+import { getDayLabel } from './services/utils';
 
 // Lazy load the ArticleModal component for code splitting
 const ArticleModal = lazy(() => import('./components/ArticleModal'));
@@ -124,7 +125,6 @@ const App: React.FC = () => {
     const [alertInfo, setAlertInfo] = useState<{ title: string; body: string } | null>(null);
     
     const uiText = useMemo(() => UI_TEXT[language], [language]);
-    const dynamicUiText = useMemo(() => DYNAMIC_UI_TEXT[language], [language]);
     
     const errorMessage = useMemo(() => {
         if (storeErrorMessage) {
@@ -239,6 +239,18 @@ const App: React.FC = () => {
                 fetchNextPage();
             }
         };
+
+        const articlesByDay = useMemo(() => {
+            return filteredArticles.reduce((acc, article) => {
+                const dayKey = article.date.split('T')[0];
+                if (!acc[dayKey]) {
+                    acc[dayKey] = [];
+                }
+                acc[dayKey].push(article);
+                return acc;
+            }, {} as Record<string, Article[]>);
+        }, [filteredArticles]);
+        const sortedDays = useMemo(() => Object.keys(articlesByDay).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()), [articlesByDay]);
         
         return (
           <div className="container mx-auto p-4 lg:p-6">
@@ -248,24 +260,37 @@ const App: React.FC = () => {
                   onSelect={handleTopicSelect}
               />
               {filteredArticles.length === 0 && !isLoading ? (
-                   <div className="col-span-full flex items-center justify-center py-20">
-                       <p className="text-2xl text-stone-500">No articles found for this topic.</p>
+                   <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                       <h3 className="text-2xl text-stone-500">{language === 'ar' ? 'لم يتم العثور على مقالات' : 'No Articles Found'}</h3>
+                       <p className="mt-2 text-stone-400">{language === 'ar' ? 'حاول تحديد فئة مختلفة.' : 'Try selecting a different topic.'}</p>
                    </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredArticles.map((item, index) => {
-                        const isFeatured = index === 0 && !searchQuery && activeTopic === 'all' && filteredArticles.length > 3;
-                        return (
-                            <ArticleCard 
-                                key={item.id}
-                                article={item}
-                                onReadMore={setSelectedArticle}
-                                categoryText={CATEGORY_MAP[language][item.category] || item.category}
-                                uiText={uiText}
-                                isFeatured={isFeatured}
-                            />
-                        );
-                    })}
+                <div className="space-y-12">
+                  {sortedDays.map((day, dayIndex) => (
+                    <section key={day} aria-labelledby={`day-header-${day}`}>
+                      <h2 
+                        id={`day-header-${day}`}
+                        className={`text-2xl font-black tracking-wide pb-2 mb-6 border-b-2 border-stone-300 ${language === 'ar' ? 'font-serif-ar' : 'font-header-en'}`}
+                      >
+                        {getDayLabel(new Date(day), language)}
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {articlesByDay[day].map((item, index) => {
+                            const isFeatured = dayIndex === 0 && index === 0 && !searchQuery && activeTopic === 'all' && filteredArticles.length > 3;
+                            return (
+                                <ArticleCard 
+                                    key={item.id}
+                                    article={item}
+                                    onReadMore={setSelectedArticle}
+                                    categoryText={CATEGORY_MAP[language][item.category] || item.category}
+                                    uiText={uiText}
+                                    isFeatured={isFeatured}
+                                />
+                            );
+                        })}
+                      </div>
+                    </section>
+                  ))}
                 </div>
               )}
               {hasNextPage && (
@@ -298,6 +323,7 @@ const App: React.FC = () => {
   
     return (
         <div className={`min-h-screen ${language === 'ar' ? 'font-serif-ar' : 'font-serif-en'}`}>
+            {appStatus === 'initializing' && <LoadingOverlay title={uiText.generating_title} subtitle={uiText.generating_subtitle} />}
             {isNewEditionAvailable && (
                 <div className="sticky top-0 z-[60] bg-red-700 text-white p-2 text-center flex items-center justify-center gap-4 shadow-lg font-bold text-sm">
                     <span>{uiText.new_edition_available}</span>
@@ -316,7 +342,7 @@ const App: React.FC = () => {
                 language={language}
                 toggleLanguage={toggleLanguage}
                 languageToggleText={uiText.language_toggle}
-                onRefresh={() => window.location.reload()}
+                onRefresh={refresh}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 user={user}
