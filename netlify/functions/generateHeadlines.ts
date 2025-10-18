@@ -6,24 +6,6 @@ const TEXT_MODEL = 'gemini-2.5-flash';
 const IMAGE_MODEL = 'imagen-4.0-generate-001';
 const CATEGORIES = ['World', 'Technology', 'Sports', 'Business', 'Local', 'Politics'];
 
-/**
- * Parses a JSON string, safely handling cases where the JSON is embedded
- * within a Markdown code block (```json ... ```).
- */
-const parseJsonFromMarkdown = <T>(text: string): T => {
-  try {
-    const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (markdownMatch && markdownMatch[1]) {
-      return JSON.parse(markdownMatch[1]) as T;
-    }
-    return JSON.parse(text) as T;
-  } catch (error) {
-    console.error("Failed to parse JSON from text:", text, error);
-    throw new Error("Invalid JSON response from API.");
-  }
-};
-
-
 // Helper to send consistent JSON responses
 const jsonResponse = (statusCode: number, body: object) => ({
     statusCode,
@@ -53,9 +35,8 @@ export const handler: Handler = async (event) => {
                     : `Generate headlines for the '${topic}' category ONLY.`;
 
                 const systemInstruction = `You are a world-class news editor for a bilingual newspaper (English and Arabic).
-                Your task is to generate 5 compelling, diverse, and factual news headlines.
+                Your task is to generate 7 compelling, diverse, and factual news headlines.
                 IMPORTANT: You must avoid creating multiple headlines for the same underlying news event to ensure variety.
-                Headlines MUST be specific and avoid ambiguity (e.g., instead of 'National Team Wins', specify the country like 'Brazil's National Team Wins Soccer Championship').
                 For each headline, provide a suitable category from this list: ${CATEGORIES.join(', ')}.
                 Also, provide a concise, visually descriptive prompt for an AI image generator to create a compelling, photorealistic cover image for the article.`;
                 
@@ -88,28 +69,41 @@ export const handler: Handler = async (event) => {
             
             case 'generateArticleDetails': {
                 const { headline, language } = payload;
-                const systemInstruction = `You are an expert journalist writing for a bilingual newspaper. Your task is to provide content for a news article based on a given headline.
-                The article MUST be grounded in real-world information.
-                The article must be specific, mentioning countries, cities, company names, or people involved. Avoid vague terms like 'a local company' or 'the national team' without context.
-                You MUST format your entire response as a single, minified JSON object with NO markdown formatting (e.g., no \`\`\`json).
-                The JSON object must have these exact keys: "body" (string, 2-3 paragraphs), "byline" (string), "viralityDescription" (string).`;
+                const systemInstruction = `You are an expert journalist writing for a bilingual newspaper. Your task is to write a concise, neutral, and informative news article (2-3 paragraphs) based on a given headline.
+                You must also provide a realistic byline, a virality description, and 1-2 plausible sources.`;
                 
                 const prompt = `For the headline "${headline}" in ${language}, generate the article content.
-                The "viralityDescription" value must be one of: 'Fast Spreading', 'Medium Spreading', or 'Low Spreading' (or the language-appropriate equivalent).`;
+                The virality description must be one of: 'Fast Spreading', 'Medium Spreading', or 'Low Spreading' (or the equivalent in ${language}).`;
 
                 const response = await ai.models.generateContent({
                     model: TEXT_MODEL,
                     contents: prompt,
                     config: {
                         systemInstruction,
-                        tools: [{googleSearch: {}}],
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: Type.OBJECT,
+                            properties: {
+                                body: { type: Type.STRING },
+                                byline: { type: Type.STRING },
+                                viralityDescription: { type: Type.STRING },
+                                sources: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            title: { type: Type.STRING },
+                                            uri: { type: Type.STRING }
+                                        },
+                                        required: ["title", "uri"]
+                                    }
+                                }
+                            },
+                            required: ["body", "byline", "viralityDescription"]
+                        }
                     }
                 });
-                
-                const groundingMetadata = response.candidates?.[0]?.groundingMetadata || null;
-                const details = parseJsonFromMarkdown(response.text);
-
-                return jsonResponse(200, { details, groundingMetadata });
+                return jsonResponse(200, JSON.parse(response.text));
             }
 
             case 'generateImage': {

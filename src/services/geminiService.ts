@@ -1,4 +1,4 @@
-import type { Language, UnprocessedHeadline, UnprocessedDetails, GroundingMetadata } from '../types';
+import type { Language, UnprocessedHeadline, UnprocessedDetails } from '../types';
 
 /**
  * A helper function to call our Netlify serverless function which acts as a proxy to the Gemini API.
@@ -33,7 +33,7 @@ export const generateHeadlinesForDay = async (date: Date, language: Language, to
 /**
  * Generates the detailed content for a single article based on its headline.
  */
-export const generateArticleDetails = async (headline: string, language: Language): Promise<{ details: UnprocessedDetails, groundingMetadata: GroundingMetadata | null }> => {
+export const generateArticleDetails = async (headline: string, language: Language): Promise<UnprocessedDetails> => {
     return callGeminiApi('generateArticleDetails', { headline, language });
 };
 

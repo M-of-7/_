@@ -34,7 +34,6 @@ interface AppState {
   isNewEditionAvailable: boolean;
   initialTodayHeadlines: string[];
   activeTopic: string;
-  hydrationError: string | null;
   
   // Actions
   hydrateFromLocalStorage: () => void;
@@ -49,7 +48,6 @@ interface AppState {
   setIsNewEditionAvailable: (isAvailable: boolean) => void;
   setInitialTodayHeadlines: (headlines: string[]) => void;
   setActiveTopic: (topic: string) => void;
-  setHydrationError: (error: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -63,7 +61,6 @@ export const useAppStore = create<AppState>((set) => ({
   isNewEditionAvailable: false,
   initialTodayHeadlines: [],
   activeTopic: 'all',
-  hydrationError: null,
   
   // Actions
   hydrateFromLocalStorage: () => {
@@ -90,7 +87,6 @@ export const useAppStore = create<AppState>((set) => ({
       isNewEditionAvailable: false,
       appStatus: 'initializing', // Trigger re-initialization
       activeTopic: 'all',
-      hydrationError: null,
     })
   },
   setAppStatus: (status, error = null) => set({ appStatus: status, errorMessage: error }),
@@ -120,10 +116,8 @@ export const useAppStore = create<AppState>((set) => ({
 
       updatedArticles.forEach(updated => {
           const existing = articlesMap.get(updated.id);
-          // By spreading the existing article last, we ensure that its more
-          // detailed data (like a body or imageURL) is not overwritten
-          // by the shell article data from the fetch.
-          const merged = { ...updated, ...(existing || {}) };
+          // Merge logic: new data overwrites old, but preserves fields not present in new data.
+          const merged = { ...(existing || {}), ...updated };
 
           // Check if it's a new article or if the article has been substantively updated.
           if (!existing || JSON.stringify(existing) !== JSON.stringify(merged)) {
@@ -132,8 +126,9 @@ export const useAppStore = create<AppState>((set) => ({
           }
       });
       
-      // If no articles were actually added or changed,
-      // return the original state object to prevent an unnecessary re-render.
+      // FIX: Added a guard clause. If no articles were actually added or changed,
+      // return the original state object (`state`) to prevent an unnecessary re-render.
+      // This is a crucial fix to prevent infinite update loops.
       if (!hasChanged) {
         return state;
       }
@@ -150,9 +145,8 @@ export const useAppStore = create<AppState>((set) => ({
   setActiveTopic: (topic) => set(state => {
     // Invalidate articles if topic changes to force a full refetch
     if (state.activeTopic !== topic) {
-      return { activeTopic: topic, articles: [], hydrationError: null };
+      return { activeTopic: topic, articles: [] };
     }
     return { activeTopic: topic };
   }),
-  setHydrationError: (error) => set({ hydrationError: error }),
 }));
