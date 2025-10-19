@@ -22,15 +22,26 @@ const login = async () => {
   if (!auth) {
     const errorMsg = "Firebase Auth is not available; login unavailable.";
     console.warn(errorMsg);
-    // Throw an error that can be caught by the UI
     throw new Error(errorMsg);
   }
   const provider = new GoogleAuthProvider();
   try {
     await signInWithPopup(auth, provider);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error during sign-in:", error);
-    // Re-throw the original Firebase error to be handled by the UI
+
+    // Handle unauthorized domain error
+    if (error?.code === 'auth/unauthorized-domain') {
+      const hostingDomain = window.location.hostname;
+      throw new Error(
+        `Domain "${hostingDomain}" is not authorized. ` +
+        `To fix this:\n` +
+        `1. Go to Firebase Console → Authentication → Settings\n` +
+        `2. Add "${hostingDomain}" to "Authorized domains"\n` +
+        `3. Save and try again`
+      );
+    }
+
     throw error;
   }
 };
