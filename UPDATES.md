@@ -99,28 +99,24 @@ messagingService.sendMessage(friendId, content, articleId?)
 ```
 
 #### 2. `friendships` - الصداقات
-```sql
-- user_id
-- friend_id
+```
+- userId
+- friendId
 - status (pending/accepted/rejected)
+- createdAt
 ```
 
 #### 3. `messages` - الرسائل
-```sql
-- sender_id
-- receiver_id
+```
+- senderId
+- receiverId
 - content
-- article_id (optional)
-- is_read
+- articleId (optional)
+- isRead
+- createdAt
 ```
 
-#### 4. `cached_articles` - المقالات المخزنة
-```sql
-- id, headline, category
-- body, byline, sources
-- language, date
-- virality_description
-```
+**ملاحظة مهمة:** النظام يستخدم **Firebase Firestore** وليس Supabase
 
 ---
 
@@ -151,14 +147,15 @@ npm run build
 ### 2. إعداد متغيرات البيئة:
 ```env
 VITE_API_KEY=your_gemini_key
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_key
 ```
 
-### 3. قاعدة البيانات جاهزة!
-✅ جميع الجداول تم إنشاؤها
-✅ RLS مفعّل وآمن
-✅ Indexes للأداء
+### 3. إعداد Firebase (اختياري للرسائل):
+إذا أردت استخدام نظام الرسائل، تحتاج إعداد Firebase:
+1. أنشئ مشروع في Firebase Console
+2. أضف Firebase config في `src/config.ts`
+3. فعّل Firestore Database
+
+**ملاحظة:** نظام الرسائل يعمل فقط مع Firebase مُعدّ
 
 ---
 

@@ -28,7 +28,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
       });
 
       return () => {
-        subscription.unsubscribe();
+        subscription();
       };
     }
   }, [selectedFriend]);
