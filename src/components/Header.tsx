@@ -2,6 +2,7 @@ import React from 'react';
 import type { Language } from '../types';
 import SearchIcon from './icons/SearchIcon';
 import RefreshIcon from './icons/RefreshIcon';
+import UserIcon from './icons/UserIcon';
 import type { User } from '../services/authService';
 import { APP_VERSION } from '../constants';
 
@@ -17,6 +18,7 @@ interface HeaderProps {
   user: User | null;
   onLogin: () => void;
   onLogout: () => void;
+  onMessagingClick?: () => void;
   uiText: {
     search_placeholder: string;
     refresh_tooltip: string;
@@ -26,11 +28,11 @@ interface HeaderProps {
   };
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  title, 
-  subtitle, 
-  language, 
-  toggleLanguage, 
+const Header: React.FC<HeaderProps> = ({
+  title,
+  subtitle,
+  language,
+  toggleLanguage,
   languageToggleText,
   onRefresh,
   searchQuery,
@@ -38,6 +40,7 @@ const Header: React.FC<HeaderProps> = ({
   user,
   onLogin,
   onLogout,
+  onMessagingClick,
   uiText
 }) => {
   const today = new Date();
@@ -75,7 +78,16 @@ const Header: React.FC<HeaderProps> = ({
           <p className={`text-xs mt-1 text-stone-600 ${isRTL ? 'font-serif-ar' : 'font-serif-en'}`}>{subtitle}</p>
         </div>
 
-        <div className="w-full md:w-auto flex-1 flex items-center justify-center md:justify-end gap-4">
+        <div className="w-full md:w-auto flex-1 flex items-center justify-center md:justify-end gap-3">
+          {user && onMessagingClick && (
+            <button
+              onClick={onMessagingClick}
+              title={language === 'ar' ? 'الرسائل' : 'Messages'}
+              className="p-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg"
+            >
+              <UserIcon className="w-5 h-5" />
+            </button>
+          )}
           <button onClick={user ? onLogout : onLogin} className="bg-stone-800 text-white px-4 py-1.5 rounded-md text-sm font-bold hover:bg-stone-900 transition-colors">
             {user ? uiText.logout : uiText.login}
           </button>

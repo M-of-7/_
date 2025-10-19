@@ -1,0 +1,191 @@
+import { useQuery } from '@tanstack/react-query';
+import { useAppStore } from '../store/store';
+import type { Article, Language } from '../types';
+
+const REAL_SOURCES = {
+  Technology: [
+    { title: 'Reuters Technology', uri: 'https://www.reuters.com/technology/' },
+    { title: 'BBC Tech', uri: 'https://www.bbc.com/news/technology' },
+  ],
+  World: [
+    { title: 'CNN World', uri: 'https://www.cnn.com/world' },
+    { title: 'Al Jazeera', uri: 'https://www.aljazeera.com' },
+  ],
+  Sports: [
+    { title: 'ESPN', uri: 'https://www.espn.com' },
+    { title: 'BBC Sport', uri: 'https://www.bbc.com/sport' },
+  ],
+  Business: [
+    { title: 'Bloomberg', uri: 'https://www.bloomberg.com' },
+    { title: 'Financial Times', uri: 'https://www.ft.com' },
+  ],
+  Entertainment: [
+    { title: 'Variety', uri: 'https://www.variety.com' },
+    { title: 'Hollywood Reporter', uri: 'https://www.hollywoodreporter.com' },
+  ],
+};
+
+const MOCK_ARTICLES_AR: Article[] = [
+  {
+    id: 'ar-tech-1',
+    headline: 'شركة أبل تعلن عن هاتف آيفون 16 بميزات ذكاء اصطناعي متقدمة',
+    byline: 'بقلم: سارة أحمد',
+    date: new Date().toISOString(),
+    body: 'كشفت شركة أبل عن جيلها الجديد من هواتف آيفون، والذي يتضمن رقاقة A18 الجديدة المزودة بمحرك ذكاء اصطناعي قوي. الهاتف الجديد يقدم ميزات مثل تحسين الصور تلقائياً، ترجمة فورية للمكالمات، ومساعد صوتي أكثر ذكاءً.\n\nالسعر يبدأ من 999 دولار، ومن المتوقع أن يصل للأسواق في نوفمبر القادم.',
+    imageUrl: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
+    imagePrompt: 'Modern smartphone with AI features',
+    category: 'Technology',
+    viralityDescription: 'سريع الانتشار',
+    comments: [],
+    sources: REAL_SOURCES.Technology,
+  },
+  {
+    id: 'ar-world-1',
+    headline: 'قمة مناخية عالمية تجمع 150 دولة للحد من الانبعاثات الكربونية',
+    byline: 'بقلم: محمد حسن',
+    date: new Date().toISOString(),
+    body: 'انطلقت اليوم في دبي قمة المناخ العالمية COP29 بحضور قادة من 150 دولة. تهدف القمة إلى الاتفاق على خطة عمل ملزمة للحد من الانبعاثات الكربونية بنسبة 50% بحلول عام 2035.\n\nالدول النامية تطالب بدعم مالي وتقني من الدول المتقدمة لتنفيذ خططها المناخية.',
+    imageUrl: 'https://images.pexels.com/photos/1108572/pexels-photo-1108572.jpeg',
+    imagePrompt: 'Global climate summit',
+    category: 'World',
+    viralityDescription: 'متوسط الانتشار',
+    comments: [],
+    sources: REAL_SOURCES.World,
+  },
+  {
+    id: 'ar-sports-1',
+    headline: 'الهلال السعودي يفوز بكأس دوري أبطال آسيا للمرة الخامسة',
+    byline: 'بقلم: خالد العتيبي',
+    date: new Date().toISOString(),
+    body: 'توج نادي الهلال السعودي بلقب دوري أبطال آسيا بعد فوزه على نظيره الياباني أوراوا ريد دياموندز بنتيجة 3-1 في المباراة النهائية التي أقيمت في الرياض.\n\nهذا اللقب هو الخامس للهلال في تاريخه، ليصبح النادي الأكثر تتويجاً بالبطولة الآسيوية.',
+    imageUrl: 'https://images.pexels.com/photos/274506/pexels-photo-274506.jpeg',
+    imagePrompt: 'Soccer team celebrating victory',
+    category: 'Sports',
+    viralityDescription: 'سريع الانتشار',
+    comments: [],
+    sources: REAL_SOURCES.Sports,
+  },
+  {
+    id: 'ar-business-1',
+    headline: 'أرامكو السعودية تحقق أرباحاً قياسية في الربع الثالث',
+    byline: 'بقلم: نورة القحطاني',
+    date: new Date().toISOString(),
+    body: 'أعلنت شركة أرامكو السعودية عن أرباح صافية بلغت 32 مليار دولار في الربع الثالث من 2025، بزيادة 15% عن الربع المماثل من العام الماضي.\n\nالارتفاع جاء نتيجة زيادة أسعار النفط وتوسع الشركة في مشاريع الغاز الطبيعي.',
+    imageUrl: 'https://images.pexels.com/photos/159888/pexels-photo-159888.jpeg',
+    imagePrompt: 'Oil refinery at sunset',
+    category: 'Business',
+    viralityDescription: 'متوسط الانتشار',
+    comments: [],
+    sources: REAL_SOURCES.Business,
+  },
+  {
+    id: 'ar-entertainment-1',
+    headline: 'فيلم "الكوكب الأزرق" يحطم الأرقام القياسية في شباك التذاكر',
+    byline: 'بقلم: ليلى إبراهيم',
+    date: new Date().toISOString(),
+    body: 'حقق فيلم الخيال العلمي "الكوكب الأزرق" إيرادات قياسية بلغت 520 مليون دولار في أول أسبوع من عرضه عالمياً، متجاوزاً التوقعات بفارق كبير.\n\nالفيلم من بطولة نجوم عالميين وتم تصويره باستخدام تقنيات IMAX المتطورة.',
+    imageUrl: 'https://images.pexels.com/photos/7991319/pexels-photo-7991319.jpeg',
+    imagePrompt: 'Cinema theater with movie screen',
+    category: 'Entertainment',
+    viralityDescription: 'سريع الانتشار',
+    comments: [],
+    sources: REAL_SOURCES.Entertainment,
+  },
+];
+
+const MOCK_ARTICLES_EN: Article[] = [
+  {
+    id: 'en-tech-1',
+    headline: 'Apple Announces iPhone 16 with Advanced AI Features',
+    byline: 'By Sarah Ahmed',
+    date: new Date().toISOString(),
+    body: 'Apple unveiled its new generation of iPhones, featuring the new A18 chip with a powerful AI engine. The new phone offers features like automatic image enhancement, real-time call translation, and a smarter voice assistant.\n\nPricing starts at $999, and it\'s expected to hit markets in November.',
+    imageUrl: 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg',
+    imagePrompt: 'Modern smartphone with AI features',
+    category: 'Technology',
+    viralityDescription: 'Fast Spreading',
+    comments: [],
+    sources: REAL_SOURCES.Technology,
+  },
+  {
+    id: 'en-world-1',
+    headline: 'Global Climate Summit Brings Together 150 Countries to Reduce Carbon Emissions',
+    byline: 'By Mohammad Hassan',
+    date: new Date().toISOString(),
+    body: 'The COP29 global climate summit kicked off today in Dubai with leaders from 150 countries. The summit aims to agree on a binding action plan to reduce carbon emissions by 50% by 2035.\n\nDeveloping nations are calling for financial and technical support from developed countries to implement their climate plans.',
+    imageUrl: 'https://images.pexels.com/photos/1108572/pexels-photo-1108572.jpeg',
+    imagePrompt: 'Global climate summit',
+    category: 'World',
+    viralityDescription: 'Medium Spreading',
+    comments: [],
+    sources: REAL_SOURCES.World,
+  },
+  {
+    id: 'en-sports-1',
+    headline: 'Al-Hilal Wins AFC Champions League for the Fifth Time',
+    byline: 'By Khaled Al-Otaibi',
+    date: new Date().toISOString(),
+    body: 'Saudi club Al-Hilal won the AFC Champions League title after defeating Japanese side Urawa Red Diamonds 3-1 in the final held in Riyadh.\n\nThis is Al-Hilal\'s fifth title, making it the most decorated club in Asian football history.',
+    imageUrl: 'https://images.pexels.com/photos/274506/pexels-photo-274506.jpeg',
+    imagePrompt: 'Soccer team celebrating victory',
+    category: 'Sports',
+    viralityDescription: 'Fast Spreading',
+    comments: [],
+    sources: REAL_SOURCES.Sports,
+  },
+  {
+    id: 'en-business-1',
+    headline: 'Saudi Aramco Reports Record Profits in Q3',
+    byline: 'By Noura Al-Qahtani',
+    date: new Date().toISOString(),
+    body: 'Saudi Aramco announced net profits of $32 billion in Q3 2025, a 15% increase from the same quarter last year.\n\nThe increase came from higher oil prices and the company\'s expansion in natural gas projects.',
+    imageUrl: 'https://images.pexels.com/photos/159888/pexels-photo-159888.jpeg',
+    imagePrompt: 'Oil refinery at sunset',
+    category: 'Business',
+    viralityDescription: 'Medium Spreading',
+    comments: [],
+    sources: REAL_SOURCES.Business,
+  },
+  {
+    id: 'en-entertainment-1',
+    headline: '"Blue Planet" Movie Breaks Box Office Records',
+    byline: 'By Layla Ibrahim',
+    date: new Date().toISOString(),
+    body: 'The sci-fi film "Blue Planet" achieved record-breaking revenues of $520 million in its first week of global release, far exceeding expectations.\n\nThe film stars international celebrities and was shot using advanced IMAX technology.',
+    imageUrl: 'https://images.pexels.com/photos/7991319/pexels-photo-7991319.jpeg',
+    imagePrompt: 'Cinema theater with movie screen',
+    category: 'Entertainment',
+    viralityDescription: 'Fast Spreading',
+    comments: [],
+    sources: REAL_SOURCES.Entertainment,
+  },
+];
+
+const fetchArticlesFast = async (language: Language, topic: string): Promise<Article[]> => {
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  const articles = language === 'ar' ? MOCK_ARTICLES_AR : MOCK_ARTICLES_EN;
+
+  if (topic === 'all') {
+    return articles;
+  }
+
+  return articles.filter((a) => a.category.toLowerCase() === topic.toLowerCase());
+};
+
+export const useArticlesFast = () => {
+  const { language, activeTopic } = useAppStore();
+
+  const { data: articles = [], isLoading, isError } = useQuery({
+    queryKey: ['articles-fast', language, activeTopic],
+    queryFn: () => fetchArticlesFast(language, activeTopic),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+
+  return {
+    articles,
+    isLoading,
+    isError,
+  };
+};

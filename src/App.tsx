@@ -12,12 +12,13 @@ import { authService } from './services/authService';
 import { firestoreService } from './services/firestoreService';
 import { useAppStore } from './store/store';
 import { useAuth } from './hooks/useAuth';
-import { useArticles } from './hooks/useArticles';
+import { useArticlesFast } from './hooks/useArticlesFast';
 import { useAppInitializer } from './hooks/useAppInitializer';
 import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 
 // Lazy load the ArticleModal component for code splitting
 const ArticleModal = lazy(() => import('./components/ArticleModal'));
+const MessagingPanel = lazy(() => import('./components/MessagingPanel'));
 
 
 // A new, custom modal component to provide user alerts in a way that is consistent with the app's UI/UX.
@@ -109,11 +110,10 @@ const App: React.FC = () => {
     }, []);
 
     // State from Zustand store
-    const { 
+    const {
         language,
         appStatus,
         errorMessage: storeErrorMessage,
-        articles,
         user,
         isNewEditionAvailable,
         updateArticle,
@@ -126,25 +126,25 @@ const App: React.FC = () => {
     // Custom Hooks for logic
     const { toggleLanguage } = useAppInitializer();
     useAuth();
-    const { isLoading, isError, error, isFetchingNextPage, fetchNextPage, hasNextPage, refresh } = useArticles();
+    const { articles, isLoading, isError } = useArticlesFast();
 
     // Local UI State
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [alertInfo, setAlertInfo] = useState<{ title: string; body: string } | null>(null);
+    const [showMessaging, setShowMessaging] = useState(false);
     
     const uiText = useMemo(() => UI_TEXT[language], [language]);
     
     const errorMessage = useMemo(() => {
         if (storeErrorMessage) {
-            // Generic handling for any store error (e.g., Firebase config if it's re-enabled)
             return { title: uiText.config_error_title, body: storeErrorMessage };
         }
         if (isError) {
-            return getFriendlyErrorMessage(error, uiText);
+            return { title: uiText.error_title, body: uiText.error_subtitle };
         }
         return null;
-    }, [storeErrorMessage, isError, error, uiText]);
+    }, [storeErrorMessage, isError, uiText]);
 
 
     useEffect(() => {
@@ -155,18 +155,10 @@ const App: React.FC = () => {
         setSelectedArticle(null);
     }, [language, uiText]);
 
-    // Infinite scroll implementation - moved to top level to obey Rules of Hooks
-    const observer = useRef<IntersectionObserver>();
+    // No infinite scroll needed for fast mode
     const lastArticleElementRef = useCallback((node: HTMLDivElement) => {
-        if (isFetchingNextPage) return;
-        if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasNextPage) {
-                fetchNextPage();
-            }
-        });
-        if (node) observer.current.observe(node);
-    }, [isFetchingNextPage, fetchNextPage, hasNextPage]);
+        // Placeholder for future expansion
+    }, []);
     
     const handleTopicSelect = (topicKey: string) => {
         if (activeTopic === topicKey) return; // Prevent re-fetching for the same topic
@@ -347,18 +339,19 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            <Header 
-                title={uiText.title} 
+            <Header
+                title={uiText.title}
                 subtitle={uiText.subtitle}
                 language={language}
                 toggleLanguage={toggleLanguage}
                 languageToggleText={uiText.language_toggle}
-                onRefresh={refresh}
+                onRefresh={() => window.location.reload()}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 user={user}
                 onLogin={handleLogin}
                 onLogout={authService.logout}
+                onMessagingClick={() => setShowMessaging(true)}
                 uiText={uiText}
             />
             
@@ -377,13 +370,21 @@ const App: React.FC = () => {
             </Suspense>
 
             {alertInfo && (
-                <AlertModal 
+                <AlertModal
                     title={alertInfo.title}
                     body={alertInfo.body}
                     onClose={() => setAlertInfo(null)}
                     confirmText={uiText.ok_button}
                     language={language}
                 />
+            )}
+
+            {showMessaging && (
+                <Suspense fallback={<ModalLoadingFallback />}>
+                    <MessagingPanel
+                        onClose={() => setShowMessaging(false)}
+                    />
+                </Suspense>
             )}
         </div>
     );
