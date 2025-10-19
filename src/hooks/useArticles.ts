@@ -106,7 +106,9 @@ export const useArticles = () => {
         queryKey: ['articles', today.toISOString().split('T')[0], language, activeTopic],
         queryFn: () => fetchArticlesForDay(today, language, activeTopic),
         enabled: appStatus === 'ready',
-        refetchInterval: 60 * 1000,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+        refetchInterval: 5 * 60 * 1000,
     });
     const todayArticles = todayArticlesData || [];
     

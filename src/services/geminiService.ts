@@ -73,10 +73,24 @@ export const generateHeadlinesForDay = async (date: Date, language: Language, to
 export const generateArticleDetails = async (headline: string, language: Language): Promise<UnprocessedDetails> => {
     const ai = getAI();
     const systemInstruction = `You are an expert journalist writing for a bilingual newspaper. Your task is to write a concise, neutral, and informative news article (2-3 paragraphs) based on a given headline.
-    You must also provide a realistic byline, a virality description, and 1-2 plausible sources.`;
+
+    IMPORTANT INSTRUCTIONS FOR SOURCES:
+    - Provide 2-3 REAL and CREDIBLE news sources
+    - Use ACTUAL major news organizations like: Reuters, AP, BBC, CNN, Al Jazeera, etc.
+    - The URLs must be REAL, accessible links to actual articles or the main domain
+    - Do NOT make up fake URLs or sources
+    - Format URLs properly: https://www.example.com/article-path
+    - If you're not sure about a specific article URL, use the main domain of the news organization
+
+    IMPORTANT INSTRUCTIONS FOR BYLINE:
+    - Create realistic journalist names (not celebrities or well-known people)
+    - Use professional-sounding names appropriate for the language
+    - Format: "By [First Name] [Last Name]" or equivalent in Arabic`;
 
     const prompt = `For the headline "${headline}" in ${language}, generate the article content.
-    The virality description must be one of: 'Fast Spreading', 'Medium Spreading', or 'Low Spreading' (or the equivalent in ${language}).`;
+    The virality description must be one of: 'Fast Spreading', 'Medium Spreading', or 'Low Spreading' (or the equivalent in ${language}).
+
+    Make sure sources are REAL news organizations with VALID, accessible URLs.`;
 
     const response = await ai.models.generateContent({
         model: TEXT_MODEL,
@@ -102,7 +116,7 @@ export const generateArticleDetails = async (headline: string, language: Languag
                         }
                     }
                 },
-                required: ["body", "byline", "viralityDescription"]
+                required: ["body", "byline", "viralityDescription", "sources"]
             }
         }
     });
