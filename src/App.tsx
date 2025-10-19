@@ -12,7 +12,7 @@ import { authService } from './services/authService';
 import { firestoreService } from './services/firestoreService';
 import { useAppStore } from './store/store';
 import { useAuth } from './hooks/useAuth';
-import { useArticlesFast } from './hooks/useArticlesFast';
+import { useLiveNews } from './hooks/useLiveNews';
 import { useAppInitializer } from './hooks/useAppInitializer';
 import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 
@@ -126,7 +126,7 @@ const App: React.FC = () => {
     // Custom Hooks for logic
     const { toggleLanguage } = useAppInitializer();
     useAuth();
-    const { articles, isLoading, isError } = useArticlesFast();
+    const { articles, isLoading, isError, refreshNews, isLiveMode } = useLiveNews();
 
     // Local UI State
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -254,11 +254,31 @@ const App: React.FC = () => {
         
         return (
           <div className="container mx-auto p-4 lg:p-6">
-              <TopicFilter 
-                  language={language}
-                  activeTopic={activeTopic}
-                  onSelect={handleTopicSelect}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <TopicFilter
+                    language={language}
+                    activeTopic={activeTopic}
+                    onSelect={handleTopicSelect}
+                />
+                {isLiveMode && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-sm text-green-600 font-semibold">
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                      </span>
+                      {language === 'ar' ? 'أخبار حية' : 'Live News'}
+                    </div>
+                    <button
+                      onClick={refreshNews}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                      title={language === 'ar' ? 'تحديث الأخبار' : 'Refresh News'}
+                    >
+                      {language === 'ar' ? '🔄 تحديث' : '🔄 Refresh'}
+                    </button>
+                  </div>
+                )}
+              </div>
               {filteredArticles.length === 0 && !isLoading ? (
                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
                        <h3 className="text-2xl text-stone-500">{language === 'ar' ? 'لم يتم العثور على مقالات' : 'No Articles Found'}</h3>
