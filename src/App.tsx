@@ -305,16 +305,9 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {isFetchingNextPage && (
-                <div className="flex justify-center my-8">
-                    <div className="flex items-center justify-center gap-2 text-stone-600">
-                        <SpinnerIcon className="w-6 h-6" />
-                        <span>{uiText.loading_older_articles}</span>
-                    </div>
-                </div>
-              )}
+              {/* No infinite scroll in fast mode */}
 
-              {!hasNextPage && articles.length > 0 && (
+              {articles.length > 0 && (
                 <div className="text-center my-10 p-6 bg-stone-200/70 rounded-lg max-w-4xl mx-auto">
                     <h3 className="text-2xl font-bold text-stone-800">{uiText.end_of_feed_title}</h3>
                     <p className="mt-2 text-stone-600">{uiText.end_of_feed_body}</p>
