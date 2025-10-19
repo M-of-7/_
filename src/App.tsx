@@ -78,6 +78,13 @@ const getFriendlyErrorMessage = (error: any, uiText: typeof UI_TEXT['en']): { ti
     if (technicalMessage.includes("API_KEY environment variable not set")) {
         return { title: uiText.config_error_title, body: uiText.config_error_gemini };
     }
+    // Check if API server is not running
+    if (technicalMessage.includes("Server error: Not Found") || technicalMessage.includes("Failed to fetch")) {
+        return {
+            title: uiText.error_title,
+            body: 'Development server not running. Please start the API server with: npm run dev:server'
+        };
+    }
     // Specific check for cache issue where old code fetches a route that returns HTML.
     if (technicalMessage.includes("is not valid JSON") && technicalMessage.includes("<!DOCTYPE")) {
         return { title: uiText.error_cache_title, body: uiText.error_cache_body };
@@ -91,7 +98,7 @@ const getFriendlyErrorMessage = (error: any, uiText: typeof UI_TEXT['en']): { ti
     if (technicalMessage.includes('API key not valid')) {
         return { title: uiText.config_error_title, body: uiText.error_gemini_invalid_key };
     }
-    
+
     return { title: uiText.error_title, body: uiText.error_subtitle };
 };
 
