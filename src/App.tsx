@@ -19,6 +19,7 @@ import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 // Lazy load the ArticleModal component for code splitting
 const ArticleModal = lazy(() => import('./components/ArticleModal'));
 const MessagingPanel = lazy(() => import('./components/MessagingPanel'));
+const DiagnosticsPanel = lazy(() => import('./components/DiagnosticsPanel'));
 
 
 // A new, custom modal component to provide user alerts in a way that is consistent with the app's UI/UX.
@@ -133,6 +134,7 @@ const App: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [alertInfo, setAlertInfo] = useState<{ title: string; body: string } | null>(null);
     const [showMessaging, setShowMessaging] = useState(false);
+    const [showDiagnostics, setShowDiagnostics] = useState(false);
     
     const uiText = useMemo(() => UI_TEXT[language], [language]);
     
@@ -365,6 +367,7 @@ const App: React.FC = () => {
                 onLogin={handleLogin}
                 onLogout={authService.logout}
                 onMessagingClick={() => setShowMessaging(true)}
+                onDiagnosticsClick={() => setShowDiagnostics(true)}
                 uiText={uiText}
             />
             
@@ -396,6 +399,14 @@ const App: React.FC = () => {
                 <Suspense fallback={<ModalLoadingFallback />}>
                     <MessagingPanel
                         onClose={() => setShowMessaging(false)}
+                    />
+                </Suspense>
+            )}
+
+            {showDiagnostics && (
+                <Suspense fallback={<ModalLoadingFallback />}>
+                    <DiagnosticsPanel
+                        onClose={() => setShowDiagnostics(false)}
                     />
                 </Suspense>
             )}
