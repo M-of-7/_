@@ -191,7 +191,7 @@ Deno.serve(async (req: Request) => {
     const requestedLanguage = (url.searchParams.get('language') || 'en') as 'ar' | 'en';
     const shouldTranslate = url.searchParams.get('translate') === 'true';
 
-    let feedsToFetch = RSS_FEEDS;
+    let feedsToFetch = RSS_FEEDS.filter(f => f.language === requestedLanguage);
 
     if (requestedCategory && requestedCategory !== 'all') {
       feedsToFetch = feedsToFetch.filter(f => f.category === requestedCategory);
