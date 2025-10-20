@@ -57,18 +57,18 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
 
   if (isFeatured) {
     return (
-        <div 
-            className="bg-white flex flex-col md:flex-row cursor-pointer group transform hover:-translate-y-1 transition-transform duration-300 shadow-lg hover:shadow-2xl rounded-lg overflow-hidden h-full"
+        <div
+            className="bg-white flex flex-col md:flex-row cursor-pointer group transform hover:-translate-y-2 transition-all duration-300 shadow-xl hover:shadow-2xl rounded-xl overflow-hidden h-full border-2 border-stone-200 hover:border-red-700 animate-fade-in"
             onClick={() => onReadMore(article)}
             role="article"
             aria-labelledby={`headline-${article.id}`}
         >
             <ArticleImage article={article} isFeatured={true} />
-            <div className="p-6 flex flex-col flex-grow md:w-1/2">
-                <span className="text-[10px] font-bold uppercase text-red-700 mb-1">{categoryText}</span>
-                <h2 
+            <div className="p-6 flex flex-col flex-grow md:w-1/2 bg-gradient-to-br from-white to-stone-50">
+                <span className="text-xs font-black uppercase text-red-700 mb-2 tracking-wider">{categoryText}</span>
+                <h2
                     id={`headline-${article.id}`}
-                    className={`font-bold text-stone-900 text-2xl lg:text-3xl ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}
+                    className={`font-bold text-stone-900 text-2xl lg:text-4xl leading-tight mb-2 ${isRTL ? 'font-header-ar' : 'font-header-en'}`}
                 >
                     {article.headline}
                 </h2>
@@ -79,8 +79,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
                         <span>{viralityDisplayText}</span>
                     </div>
                 </div>
-                <p className="text-sm text-stone-600 flex-grow">{bodySnippet}</p>
-                <span className="text-red-700 font-bold mt-4 self-start group-hover:underline">
+                <p className="text-base text-stone-700 flex-grow leading-relaxed">{bodySnippet}</p>
+                <span className="text-red-700 font-bold mt-5 self-start group-hover:underline transition-all duration-200 flex items-center gap-2">
                     {isRTL ? 'اقرأ المزيد ←' : 'Read More →'}
                 </span>
             </div>
@@ -90,22 +90,22 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
 
   // Regular Card
   return (
-    <div 
-      className="bg-white flex flex-col cursor-pointer group transform hover:-translate-y-1 transition-transform duration-300 shadow-md hover:shadow-xl rounded-lg overflow-hidden h-full"
+    <div
+      className="bg-white flex flex-col cursor-pointer group transform hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-2xl rounded-xl overflow-hidden h-full border border-stone-200 hover:border-red-600 animate-fade-in"
       onClick={() => onReadMore(article)}
       role="article"
       aria-labelledby={`headline-${article.id}`}
     >
         <div className="relative">
             <ArticleImage article={article} isFeatured={false} />
-            <span className="absolute top-2 left-2 rtl:left-auto rtl:right-2 bg-red-700 text-white text-[10px] font-bold uppercase px-2 py-1 rounded z-10">
+            <span className="absolute top-3 left-3 rtl:left-auto rtl:right-3 bg-gradient-to-r from-red-700 to-red-800 text-white text-xs font-black uppercase px-3 py-1.5 rounded-lg shadow-lg z-10">
               {categoryText}
             </span>
         </div>
-        <div className="p-4 flex flex-col flex-grow">
-            <h2 
+        <div className="p-5 flex flex-col flex-grow">
+            <h2
                 id={`headline-${article.id}`}
-                className={`font-bold text-stone-900 text-xl ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}
+                className={`font-bold text-stone-900 text-xl lg:text-2xl leading-tight ${isRTL ? 'font-header-ar' : 'font-header-en'}`}
             >
                 {article.headline}
             </h2>
@@ -116,8 +116,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
                     <span>{viralityDisplayText}</span>
                 </div>
             </div>
-            <p className="text-sm text-stone-600 flex-grow">{bodySnippet}</p>
-            <span className="text-red-700 font-bold mt-4 self-start group-hover:underline">
+            <p className="text-sm text-stone-700 flex-grow leading-relaxed">{bodySnippet}</p>
+            <span className="text-red-700 font-bold mt-4 self-start group-hover:underline transition-all duration-200">
             {isRTL ? 'اقرأ المزيد ←' : 'Read More →'}
             </span>
         </div>

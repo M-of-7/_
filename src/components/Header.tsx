@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
   const isRTL = language === 'ar';
 
   return (
-    <header className="bg-stone-100 p-3 lg:p-4 border-b-2 border-stone-200">
+    <header className="bg-gradient-to-r from-stone-50 via-white to-stone-50 p-4 lg:p-6 border-b-4 border-stone-900 shadow-lg">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="w-full md:w-auto flex-1 flex items-center gap-4">
           <button 
@@ -76,8 +76,8 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex-1.5 text-center px-4 order-first md:order-none">
-          <h1 className={`text-3xl lg:text-4xl font-black tracking-wider text-stone-900 ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{title}</h1>
-          <p className={`text-xs mt-1 text-stone-600 ${isRTL ? 'font-serif-ar' : 'font-serif-en'}`}>{subtitle}</p>
+          <h1 className={`text-4xl lg:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-stone-900 via-red-800 to-stone-900 ${isRTL ? 'font-header-ar' : 'font-header-en'}`}>{title}</h1>
+          <p className={`text-sm mt-2 text-stone-700 font-semibold ${isRTL ? 'font-serif-ar' : 'font-serif-en'}`}>{subtitle}</p>
         </div>
 
         <div className="w-full md:w-auto flex-1 flex items-center justify-center md:justify-end gap-3">
@@ -109,11 +109,11 @@ const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
       </div>
-      <div className="flex justify-between items-center mt-4 border-t-4 border-b-2 border-stone-900 border-double py-2">
-        <span className="text-xs font-bold text-stone-900">{formattedDate}</span>
+      <div className="flex justify-between items-center mt-5 pt-4 border-t-4 border-stone-900">
+        <span className="text-sm font-bold text-stone-900 tracking-wide">{formattedDate}</span>
         <div className="flex items-center gap-4">
-            <span className="text-xs font-bold text-stone-500">v{APP_VERSION}</span>
-            <span className="text-xs font-bold text-stone-900">VOL. 1, NO. 1</span>
+            <span className="text-xs font-semibold text-stone-500">v{APP_VERSION}</span>
+            <span className="text-sm font-bold text-stone-900">VOL. 1, NO. 1</span>
         </div>
       </div>
     </header>

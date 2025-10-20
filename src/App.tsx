@@ -255,16 +255,16 @@ const App: React.FC = () => {
         }
         
         return (
-          <div className="container mx-auto p-4 lg:p-6">
-              <div className="flex items-center justify-between mb-4">
+          <div className="container mx-auto p-4 lg:p-8 animate-fade-in">
+              <div className="flex items-center justify-between mb-6">
                 <TopicFilter
                     language={language}
                     activeTopic={activeTopic}
                     onSelect={handleTopicSelect}
                 />
                 {isLiveMode && (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-sm text-green-600 font-semibold">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm bg-gradient-to-r from-green-50 to-green-100 text-green-700 font-bold px-4 py-2 rounded-full border-2 border-green-500 shadow-md">
                       <span className="relative flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
@@ -273,7 +273,7 @@ const App: React.FC = () => {
                     </div>
                     <button
                       onClick={refreshNews}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                      className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all duration-200 text-sm font-bold shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                       title={language === 'ar' ? 'تحديث الأخبار' : 'Refresh News'}
                     >
                       {language === 'ar' ? '🔄 تحديث' : '🔄 Refresh'}
@@ -282,9 +282,11 @@ const App: React.FC = () => {
                 )}
               </div>
               {filteredArticles.length === 0 && !isLoading ? (
-                   <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
-                       <h3 className="text-2xl text-stone-500">{language === 'ar' ? 'لم يتم العثور على مقالات' : 'No Articles Found'}</h3>
-                       <p className="mt-2 text-stone-400">{language === 'ar' ? 'حاول تحديد فئة مختلفة.' : 'Try selecting a different topic.'}</p>
+                   <div className="col-span-full flex flex-col items-center justify-center py-32 text-center animate-fade-in">
+                       <div className="bg-white p-8 rounded-2xl shadow-xl border-2 border-stone-200">
+                         <h3 className="text-3xl font-bold text-stone-700">{language === 'ar' ? 'لم يتم العثور على مقالات' : 'No Articles Found'}</h3>
+                         <p className="mt-3 text-stone-500 text-lg">{language === 'ar' ? 'حاول تحديد فئة مختلفة.' : 'Try selecting a different topic.'}</p>
+                       </div>
                    </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -330,9 +332,9 @@ const App: React.FC = () => {
               {/* No infinite scroll in fast mode */}
 
               {articles.length > 0 && (
-                <div className="text-center my-10 p-6 bg-stone-200/70 rounded-lg max-w-4xl mx-auto">
-                    <h3 className="text-2xl font-bold text-stone-800">{uiText.end_of_feed_title}</h3>
-                    <p className="mt-2 text-stone-600">{uiText.end_of_feed_body}</p>
+                <div className="text-center my-12 p-8 bg-gradient-to-r from-stone-100 via-stone-50 to-stone-100 rounded-2xl max-w-4xl mx-auto shadow-lg border-2 border-stone-200 animate-fade-in">
+                    <h3 className="text-3xl font-bold text-stone-900">{uiText.end_of_feed_title}</h3>
+                    <p className="mt-3 text-stone-700 text-lg">{uiText.end_of_feed_body}</p>
                 </div>
               )}
           </div>

@@ -58,20 +58,20 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
 
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" 
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby={`modal-headline-${article.id}`}
     >
-      <div 
-        className="bg-stone-100 rounded-lg shadow-2xl max-w-4xl w-11/12 h-[90vh] flex flex-col"
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-5xl w-11/12 h-[92vh] flex flex-col border-2 border-stone-200 animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
-        <button onClick={onClose} className="absolute top-3 right-3 z-20 p-1 bg-white/70 rounded-full hover:bg-white transition-colors" aria-label="Close article">
-          <svg className="w-6 h-6 text-stone-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <button onClick={onClose} className="absolute top-4 right-4 rtl:right-auto rtl:left-4 z-20 p-2 bg-red-700 text-white rounded-full hover:bg-red-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-110" aria-label="Close article">
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
         <div className="flex-shrink-0">
@@ -91,29 +91,29 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
                 <div className="w-full h-64 bg-stone-200 animate-pulse rounded-t-lg"></div>
             )}
         </div>
-        <div className="flex-1 overflow-y-auto p-6 lg:p-8">
-          <h1 id={`modal-headline-${article.id}`} className={`text-3xl lg:text-4xl font-bold text-stone-900 mb-2 ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{article.headline}</h1>
-          <div className="flex items-center mb-6 gap-3 text-stone-600">
-            <span>{article.byline} &bull; {formattedDate}</span>
-            <div title={uiText.virality_tooltip} className={`flex items-center gap-1 font-bold ${viralityColorClass}`}>
+        <div className="flex-1 overflow-y-auto p-6 lg:p-10 bg-gradient-to-b from-white to-stone-50">
+          <h1 id={`modal-headline-${article.id}`} className={`text-4xl lg:text-5xl font-black text-stone-900 mb-4 leading-tight ${isRTL ? 'font-header-ar' : 'font-header-en'}`}>{article.headline}</h1>
+          <div className="flex items-center mb-8 gap-4 text-stone-700 text-sm">
+            <span className="font-semibold">{article.byline} &bull; {formattedDate}</span>
+            <div title={uiText.virality_tooltip} className={`flex items-center gap-2 font-bold px-3 py-1 rounded-full bg-opacity-10 ${viralityColorClass} ${viralityColorClass.replace('text-', 'bg-')}`}>
               <TrendingUpIcon className="w-5 h-5" color="currentColor" />
               <span>{viralityDisplayText}</span>
             </div>
           </div>
           
-          <div className="prose max-w-none text-lg text-stone-800 leading-relaxed">
+          <div className="prose max-w-none text-lg text-stone-900 leading-relaxed space-y-4">
             {article.body && article.body.split('\n').map((paragraph, index) => (
-              paragraph.trim() && <p key={index}>{paragraph}</p>
+              paragraph.trim() && <p key={index} className="text-justify">{paragraph}</p>
             ))}
           </div>
 
           {article.sources && article.sources.length > 0 && (
-            <div className="mt-8 pt-4 border-t border-stone-300">
-                <h3 className={`text-xl font-bold text-stone-800 mb-2 ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{uiText.sources}</h3>
-                <ul className="list-disc list-inside space-y-1">
+            <div className="mt-10 pt-6 border-t-2 border-stone-300">
+                <h3 className={`text-2xl font-bold text-stone-900 mb-4 ${isRTL ? 'font-header-ar' : 'font-header-en'}`}>{uiText.sources}</h3>
+                <ul className="list-disc list-inside space-y-2">
                     {article.sources.map((source, index) => (
                         <li key={index}>
-                            <a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-red-700 hover:underline">
+                            <a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-red-700 hover:text-red-900 hover:underline font-semibold transition-colors">
                                 {source.title || source.uri}
                             </a>
                         </li>
