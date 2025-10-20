@@ -76,7 +76,7 @@ export async function fetchLiveNews(
 
 export async function refreshLiveNews(
   language: 'ar' | 'en',
-  category: string = 'general'
+  category: string = 'all'
 ): Promise<void> {
   if (!supabaseUrl) {
     throw new Error('Supabase not configured');
@@ -85,8 +85,21 @@ export async function refreshLiveNews(
   try {
     const functionUrl = `${supabaseUrl}/functions/v1/fetch-live-news`;
 
+    const categoryMap: Record<string, string> = {
+      'all': 'world',
+      'local': 'world',
+      'politics': 'politics',
+      'business': 'business',
+      'technology': 'technology',
+      'sports': 'sports',
+      'entertainment': 'world',
+      'health': 'world',
+    };
+
+    const mappedCategory = categoryMap[category] || 'world';
+
     const response = await fetch(
-      `${functionUrl}?language=${language}&category=${category}`,
+      `${functionUrl}?language=${language}&category=${mappedCategory}`,
       {
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
@@ -95,11 +108,13 @@ export async function refreshLiveNews(
     );
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Edge Function error:', errorText);
       throw new Error('Failed to refresh news');
     }
 
     const result = await response.json();
-    console.log(`Refreshed news: ${result.inserted} new articles`);
+    console.log(`Refreshed news: ${result.inserted} new articles inserted out of ${result.total} fetched`);
   } catch (error) {
     console.error('Error refreshing live news:', error);
     throw error;
