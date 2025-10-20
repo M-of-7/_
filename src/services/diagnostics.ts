@@ -25,41 +25,48 @@ export class SystemDiagnostics {
   }
 
   private async checkEnvironmentVariables() {
+    const publicBoltUrl = import.meta.env.VITE_PUBLIC_Bolt_Database_URL;
+    const publicBoltKey = import.meta.env.VITE_PUBLIC_Bolt_Database_ANON_KEY;
     const boltUrl = import.meta.env.VITE_Bolt_Database_URL;
     const boltKey = import.meta.env.VITE_Bolt_Database_ANON_KEY;
     const publicUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
     const publicKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!boltUrl && !publicUrl) {
+    const foundUrl = publicBoltUrl || boltUrl || publicUrl;
+
+    if (!foundUrl) {
       this.addResult({
         category: 'Environment Variables',
         status: 'error',
         message: 'Missing Supabase URL',
-        details: 'Neither VITE_Bolt_Database_URL nor VITE_PUBLIC_SUPABASE_URL is set',
-        fix: 'Add VITE_Bolt_Database_URL=https://ewxilqokahxdosdjrkzr.supabase.co to Bolt Secrets'
+        details: 'No VITE_PUBLIC_Bolt_Database_URL, VITE_Bolt_Database_URL, or VITE_PUBLIC_SUPABASE_URL found',
+        fix: 'Add VITE_PUBLIC_Bolt_Database_URL=https://ewxilqokahxdosdjrkzr.supabase.co to .env file'
       });
     } else {
       this.addResult({
         category: 'Environment Variables',
         status: 'ok',
-        message: `Supabase URL found: ${boltUrl || publicUrl}`,
+        message: `Supabase URL configured`,
+        details: `Using: ${foundUrl}`
       });
     }
 
-    if (!boltKey && !publicKey) {
+    const foundKey = publicBoltKey || boltKey || publicKey;
+
+    if (!foundKey) {
       this.addResult({
         category: 'Environment Variables',
         status: 'error',
         message: 'Missing Supabase Key',
-        details: 'Neither VITE_Bolt_Database_ANON_KEY nor VITE_PUBLIC_SUPABASE_ANON_KEY is set',
-        fix: 'Add VITE_Bolt_Database_ANON_KEY to Bolt Secrets'
+        details: 'No VITE_PUBLIC_Bolt_Database_ANON_KEY, VITE_Bolt_Database_ANON_KEY, or VITE_PUBLIC_SUPABASE_ANON_KEY found',
+        fix: 'Add VITE_PUBLIC_Bolt_Database_ANON_KEY to .env file'
       });
     } else {
       this.addResult({
         category: 'Environment Variables',
         status: 'ok',
-        message: 'Supabase Key found',
-        details: `Key starts with: ${(boltKey || publicKey)?.substring(0, 20)}...`
+        message: 'Supabase Key configured',
+        details: `Key prefix: ${foundKey.substring(0, 20)}...`
       });
     }
   }
@@ -67,8 +74,8 @@ export class SystemDiagnostics {
   private async checkSupabaseConnection() {
     try {
       const { createClient } = await import('@supabase/supabase-js');
-      const url = import.meta.env.VITE_Bolt_Database_URL || import.meta.env.VITE_PUBLIC_SUPABASE_URL;
-      const key = import.meta.env.VITE_Bolt_Database_ANON_KEY || import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+      const url = import.meta.env.VITE_PUBLIC_Bolt_Database_URL || import.meta.env.VITE_Bolt_Database_URL || import.meta.env.VITE_PUBLIC_SUPABASE_URL;
+      const key = import.meta.env.VITE_PUBLIC_Bolt_Database_ANON_KEY || import.meta.env.VITE_Bolt_Database_ANON_KEY || import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 
       if (!url || !key) {
         this.addResult({
@@ -110,8 +117,8 @@ export class SystemDiagnostics {
   private async checkDatabaseTables() {
     try {
       const { createClient } = await import('@supabase/supabase-js');
-      const url = import.meta.env.VITE_Bolt_Database_URL || import.meta.env.VITE_PUBLIC_SUPABASE_URL;
-      const key = import.meta.env.VITE_Bolt_Database_ANON_KEY || import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+      const url = import.meta.env.VITE_PUBLIC_Bolt_Database_URL || import.meta.env.VITE_Bolt_Database_URL || import.meta.env.VITE_PUBLIC_SUPABASE_URL;
+      const key = import.meta.env.VITE_PUBLIC_Bolt_Database_ANON_KEY || import.meta.env.VITE_Bolt_Database_ANON_KEY || import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 
       if (!url || !key) return;
 
@@ -156,8 +163,8 @@ export class SystemDiagnostics {
   private async checkArticlesData() {
     try {
       const { createClient } = await import('@supabase/supabase-js');
-      const url = import.meta.env.VITE_Bolt_Database_URL || import.meta.env.VITE_PUBLIC_SUPABASE_URL;
-      const key = import.meta.env.VITE_Bolt_Database_ANON_KEY || import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+      const url = import.meta.env.VITE_PUBLIC_Bolt_Database_URL || import.meta.env.VITE_Bolt_Database_URL || import.meta.env.VITE_PUBLIC_SUPABASE_URL;
+      const key = import.meta.env.VITE_PUBLIC_Bolt_Database_ANON_KEY || import.meta.env.VITE_Bolt_Database_ANON_KEY || import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 
       if (!url || !key) return;
 

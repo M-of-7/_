@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SystemDiagnostics, DiagnosticResult } from '../services/diagnostics';
+import { autoFixDatabase, FixProgress } from '../services/autoFix';
 
 interface DiagnosticsPanelProps {
   onClose: () => void;
@@ -9,10 +10,13 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
   const [results, setResults] = useState<DiagnosticResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [hasRun, setHasRun] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
+  const [fixStatus, setFixStatus] = useState<string>('');
 
   const runDiagnostics = async () => {
     setIsRunning(true);
     setHasRun(false);
+    setFixStatus('');
 
     try {
       const diagnostics = new SystemDiagnostics();
@@ -30,6 +34,35 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
       setHasRun(true);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const autoFix = async () => {
+    setIsFixing(true);
+
+    const handleProgress = (progress: FixProgress) => {
+      if (progress.success === true) {
+        setFixStatus(`✓ ${progress.message}`);
+      } else if (progress.success === false) {
+        setFixStatus(`❌ ${progress.message}`);
+      } else {
+        setFixStatus(`🔄 ${progress.message}`);
+      }
+    };
+
+    try {
+      const success = await autoFixDatabase(handleProgress);
+
+      if (success) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setFixStatus('🔄 Re-running diagnostics...');
+        await runDiagnostics();
+      }
+    } catch (error) {
+      console.error('Auto-fix failed:', error);
+      setFixStatus(`❌ Unexpected error: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsFixing(false);
     }
   };
 
@@ -156,20 +189,41 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-4 bg-gray-50 flex gap-3">
-          <button
-            onClick={runDiagnostics}
-            disabled={isRunning}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-          >
-            {isRunning ? 'Running...' : hasRun ? 'Run Again' : 'Run Diagnostics'}
-          </button>
-          <button
-            onClick={onClose}
-            className="px-6 py-3 border-2 border-gray-300 hover:bg-gray-100 text-gray-700 font-bold rounded-lg transition-colors"
-          >
-            Close
-          </button>
+        <div className="border-t border-gray-200 p-4 bg-gray-50">
+          {fixStatus && (
+            <div className={`mb-3 p-3 rounded-lg text-sm font-semibold ${
+              fixStatus.includes('✅') || fixStatus.includes('✓') ? 'bg-green-100 text-green-800' :
+              fixStatus.includes('❌') ? 'bg-red-100 text-red-800' :
+              'bg-blue-100 text-blue-800'
+            }`}>
+              {fixStatus}
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={runDiagnostics}
+              disabled={isRunning || isFixing}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+            >
+              {isRunning ? 'Running...' : hasRun ? 'Run Again' : 'Run Diagnostics'}
+            </button>
+            {errorCount > 0 && hasRun && (
+              <button
+                onClick={autoFix}
+                disabled={isRunning || isFixing}
+                className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-md"
+              >
+                {isFixing ? '🔄 Fixing...' : '🔧 Auto-Fix Issues'}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              disabled={isFixing}
+              className="px-6 py-3 border-2 border-gray-300 hover:bg-gray-100 disabled:bg-gray-200 text-gray-700 font-bold rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
