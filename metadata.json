@@ -1,0 +1,6 @@
+{
+  "name": "suhf",
+  "displayName": "suhf",
+  "description": "A dynamic, bilingual newspaper application that generates articles and images in real-time using Google's Gemini API. It supports both English and Arabic, providing a modern, AI-driven news reading experience.",
+  "requestFramePermissions": []
+}
