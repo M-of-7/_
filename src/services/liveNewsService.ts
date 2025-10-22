@@ -34,6 +34,7 @@ interface NewsArticle {
   published_at: string;
   author: string;
   created_at: string;
+  virality_description: string | null;
 }
 
 function convertToArticle(news: NewsArticle): Article {
@@ -46,7 +47,7 @@ function convertToArticle(news: NewsArticle): Article {
     imageUrl: news.image_url || 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg',
     imagePrompt: '',
     category: news.category as any,
-    viralityDescription: 'Live News',
+    viralityDescription: news.virality_description || undefined,
     comments: [],
     sources: [{ title: news.source_name, uri: news.source_url }],
   };

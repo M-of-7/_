@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Article } from '../types';
 import { UI_TEXT } from '../constants';
+import ViralityIndicator from './ViralityIndicator';
 
 interface ArticleCardProps {
   article: Article;
@@ -33,6 +34,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
               <p className="font-semibold">{uiText.by} {article.byline}</p>
               <p>{new Date(article.date).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
+            <ViralityIndicator virality={article.viralityDescription} uiText={uiText} />
           </div>
         </div>
       </div>
@@ -50,9 +52,12 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onReadMore, category
         <div>
           <h3 className={`font-bold text-xl leading-tight text-stone-900 group-hover:text-blue-700 transition-colors ${headerFontClass}`}>{article.headline}</h3>
         </div>
-        <div className="mt-auto pt-4 flex justify-between items-center text-xs text-stone-500">
-          <p className="font-semibold">{uiText.by} {article.byline}</p>
-          <p>{new Date(article.date).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', { day: 'numeric', month: 'short' })}</p>
+        <div className="mt-auto pt-4 flex justify-between items-center">
+           <div className="text-xs text-stone-500">
+              <p className="font-semibold">{uiText.by} {article.byline}</p>
+              <p>{new Date(article.date).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', { day: 'numeric', month: 'short' })}</p>
+            </div>
+            <ViralityIndicator virality={article.viralityDescription} uiText={uiText} />
         </div>
       </div>
     </div>

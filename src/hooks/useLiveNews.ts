@@ -8,6 +8,7 @@ import { MOCK_ARTICLES } from '../services/mockData';
 const fetchArticles = async (language: Language, topic: string): Promise<Article[]> => {
   if (!isLiveNewsEnabled) {
     // Fast mode: return mock data directly
+    console.log("Live news disabled, returning mock data.");
     const mockArticles = MOCK_ARTICLES[language] || [];
     if (topic === 'all') {
       return mockArticles;
@@ -15,7 +16,7 @@ const fetchArticles = async (language: Language, topic: string): Promise<Article
     return mockArticles.filter((a) => a.category.toLowerCase() === topic.toLowerCase());
   }
 
-  // Live mode: fetch from Supabase and fallback on error
+  // Live mode: fetch from Supabase. No fallback to mock data on error to ensure data is always live.
   try {
     const articles = await fetchLiveNews(language, topic === 'all' ? undefined : topic);
 
@@ -28,17 +29,10 @@ const fetchArticles = async (language: Language, topic: string): Promise<Article
 
     return articles;
   } catch (error) {
-    console.error('Error fetching live news, falling back to mock data:', error);
-    // Fallback to mock data on error to ensure app remains usable.
-    const mockArticles = MOCK_ARTICLES[language] || [];
-
-    if (topic === 'all') {
-      return mockArticles;
-    }
-
-    return mockArticles.filter((a) =>
-      a.category.toLowerCase() === topic.toLowerCase()
-    );
+    console.error('CRITICAL: Error fetching live news. The application will show an error state.', error);
+    // Re-throw the error to be caught by React Query's `isError` state.
+    // This PREVENTS falling back to stale mock data.
+    throw error;
   }
 };
 
@@ -52,6 +46,7 @@ export const useLiveNews = () => {
     staleTime: 1000 * 60, // 1 minute
     gcTime: 1000 * 60 * 5, // 5 minutes
     refetchInterval: 1000 * 60 * 2, // 2 minutes
+    retry: 1, // Retry only once on failure before showing an error
   });
 
   useEffect(() => {

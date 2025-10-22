@@ -2,23 +2,15 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 // @ts-ignore: DOMParser is available in the Supabase Edge Function environment via linkedom
 import { DOMParser } from 'npm:linkedom@0.18.4';
+// @ts-ignore: Import Gemini AI
+import { GoogleGenAI } from 'npm:@google/genai@^1.26.0';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
-
-interface NewsAPIArticle {
-  title: string;
-  description: string;
-  content: string;
-  source: { name: string };
-  url: string;
-  urlToImage: string;
-  publishedAt: string;
-  author: string;
-}
 
 interface RSSFeed {
   url: string;
@@ -101,33 +93,6 @@ const RSS_FEEDS: RSSFeed[] = [
   { url: 'https://www.theguardian.com/society/health/rss', name: 'Guardian Health', language: 'en', category: 'local' },
 ];
 
-async function translateText(text: string, targetLang: 'ar' | 'en'): Promise<string> {
-  try {
-    // @ts-ignore
-    const apiKey = Deno.env.get('VITE_API_KEY');
-    if (!apiKey) return text;
-
-    const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          q: text,
-          target: targetLang,
-          format: 'text',
-        }),
-      }
-    );
-
-    const data = await response.json();
-    return data?.data?.translations?.[0]?.translatedText || text;
-  } catch (error) {
-    console.error('Translation error:', error);
-    return text;
-  }
-}
-
 async function parseRSS(feed: RSSFeed): Promise<any[]> {
   try {
     const response = await fetch(feed.url, {
@@ -135,6 +100,10 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
         'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)'
       }
     });
+    if (!response.ok) {
+        console.error(`Failed to fetch RSS from ${feed.name}: ${response.status} ${response.statusText}`);
+        return [];
+    }
     const text = await response.text();
     const parser = new DOMParser();
     const doc: any = parser.parseFromString(text, 'text/xml');
@@ -146,7 +115,7 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
       const title = item.querySelector('title')?.textContent?.trim() || '';
       
       let body = item.querySelector('description')?.textContent || '';
-      const contentEncoded = item.querySelector('content\\:encoded')?.textContent;
+      const contentEncoded = item.querySelector('content\\:encoded, [is="content:encoded"]')?.textContent;
       if (contentEncoded && contentEncoded.length > body.length) {
         body = contentEncoded;
       }
@@ -155,7 +124,7 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
       const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
 
       let imageUrl = '';
-      const mediaContent = item.querySelector('media\\:content, content');
+      const mediaContent = item.querySelector('media\\:content, [is="media:content"]');
       const enclosure = item.querySelector('enclosure');
 
       if (mediaContent) {
@@ -164,7 +133,14 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
         imageUrl = enclosure.getAttribute('url') || '';
       }
 
-      // Fallback to find image in content
+      if (!imageUrl && body) {
+          const bodyDoc = parser.parseFromString(body, 'text/html');
+          const img = bodyDoc.querySelector('img');
+          if (img) {
+              imageUrl = img.getAttribute('src') || '';
+          }
+      }
+      
       if (!imageUrl && body) {
           const match = body.match(/<img[^>]+src="([^">]+)"/);
           if (match && match[1]) {
@@ -175,7 +151,7 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
       if (title && link) {
         articles.push({
           title: title,
-          description: body.replace(/<[^>]*>/g, '').trim(),
+          description: body.replace(/<[^>]*>/g, '').substring(0, 500).trim(),
           url: link.trim(),
           imageUrl,
           publishedAt: new Date(pubDate).toISOString(),
@@ -205,11 +181,16 @@ Deno.serve(async (req: Request) => {
     // @ts-ignore
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    // @ts-ignore
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    let ai: GoogleGenAI | null = null;
+    if (geminiApiKey) {
+      ai = new GoogleGenAI({ apiKey: geminiApiKey });
+    }
 
     const url = new URL(req.url);
     const requestedCategory = url.searchParams.get('category') || 'all';
     const requestedLanguage = (url.searchParams.get('language') || 'en') as 'ar' | 'en';
-    const shouldTranslate = url.searchParams.get('translate') === 'true';
 
     let feedsToFetch = RSS_FEEDS.filter(f => f.language === requestedLanguage);
 
@@ -234,32 +215,44 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (!existing) {
-        let finalTitle = article.title;
-        let finalDescription = article.description;
+        let viralityDescription = 'Low';
 
-        if (shouldTranslate && article.language !== requestedLanguage) {
-          finalTitle = await translateText(article.title, requestedLanguage);
-          finalDescription = await translateText(article.description, requestedLanguage);
+        if (ai) {
+          try {
+            const response = await ai.models.generateContent({
+              model: 'gemini-2.5-flash',
+              contents: `Based on the following news headline, rate its potential virality as "Low", "Medium", or "Fast". Consider factors like emotional impact, broad appeal, and urgency. Respond with only one word: Low, Medium, or Fast.\n\nHeadline: "${article.title}"`,
+            });
+            const textResponse = response.text.trim();
+            if (['Low', 'Medium', 'Fast'].includes(textResponse)) {
+                viralityDescription = textResponse;
+            }
+          } catch(e) {
+            console.error(`Gemini API error for headline "${article.title}":`, e.message);
+          }
         }
-
+        
         const { data, error } = await supabase
           .from('news_articles')
           .insert({
-            title: finalTitle,
-            description: finalDescription,
-            content: finalDescription,
+            title: article.title,
+            description: article.description,
+            content: article.description,
             source_name: article.source,
             source_url: article.url,
             image_url: article.imageUrl || 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg',
             category: article.category,
-            language: shouldTranslate ? requestedLanguage : article.language,
+            language: article.language,
             published_at: article.publishedAt,
             author: article.source,
+            virality_description: viralityDescription,
           })
           .select()
           .single();
 
-        if (data) {
+        if (error) {
+          console.error('Supabase insert error:', error.message);
+        } else if (data) {
           insertedArticles.push(data);
         }
       }
@@ -275,7 +268,7 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('Main function error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

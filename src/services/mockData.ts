@@ -22,6 +22,13 @@ const REAL_SOURCES = {
     { title: 'Variety', uri: 'https://www.variety.com' },
     { title: 'Hollywood Reporter', uri: 'https://www.hollywoodreporter.com' },
   ],
+  Politics: [
+      { title: 'Associated Press Politics', uri: 'https://apnews.com/hub/politics' },
+      { title: 'Politico', uri: 'https://www.politico.com' },
+  ],
+  Local: [
+      { title: 'Your Local News Source', uri: '#' },
+  ]
 };
 
 export const MOCK_ARTICLES: { [key: string]: Article[] } = {
@@ -51,6 +58,32 @@ export const MOCK_ARTICLES: { [key: string]: Article[] } = {
       viralityDescription: 'متوسط الانتشار',
       comments: [],
       sources: REAL_SOURCES.World,
+    },
+     {
+      id: 'ar-politics-1',
+      headline: 'اتفاقية تجارية جديدة بين الاتحاد الأوروبي ودول الميركوسور تدخل حيز التنفيذ',
+      byline: 'بقلم: علي محمود',
+      date: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
+      body: 'بعد سنوات من المفاوضات، تم تفعيل الاتفاقية التجارية الجديدة التي تهدف إلى تعزيز التبادل التجاري وخفض الرسوم الجمركية بين الكتلتين الاقتصاديتين الكبيرتين. يتوقع المحللون أن تساهم الاتفاقية في نمو اقتصادي ملموس للجانبين.',
+      imageUrl: 'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg',
+      imagePrompt: 'Handshake over a business meeting table',
+      category: 'Politics',
+      viralityDescription: 'متوسط الانتشار',
+      comments: [],
+      sources: REAL_SOURCES.Politics,
+    },
+    {
+      id: 'ar-local-1',
+      headline: 'افتتاح المرحلة الأولى من مشروع المترو الجديد في العاصمة',
+      byline: 'بقلم: فاطمة سالم',
+      date: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago
+      body: 'شهدت العاصمة اليوم افتتاح المرحلة الأولى من مشروع المترو الذي يربط بين شمال المدينة وجنوبها، بحضور عدد من المسؤولين. من المتوقع أن يخدم الخط الجديد أكثر من نصف مليون راكب يومياً، مما سيساهم في تخفيف الازدحام المروري بشكل كبير.',
+      imageUrl: 'https://images.pexels.com/photos/592798/pexels-photo-592798.jpeg',
+      imagePrompt: 'Modern subway train at a station',
+      category: 'Local',
+      viralityDescription: 'سريع الانتشار',
+      comments: [],
+      sources: REAL_SOURCES.Local,
     },
     {
       id: 'ar-sports-1',
@@ -118,6 +151,32 @@ export const MOCK_ARTICLES: { [key: string]: Article[] } = {
       viralityDescription: 'Medium Spreading',
       comments: [],
       sources: REAL_SOURCES.World,
+    },
+    {
+      id: 'en-politics-1',
+      headline: 'New Trade Agreement Between EU and Mercosur Nations Comes into Effect',
+      byline: 'By John Doe',
+      date: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
+      body: 'After years of negotiations, the new trade agreement aimed at boosting trade and reducing tariffs between the two major economic blocs has been activated. Analysts expect the deal to contribute to significant economic growth on both sides.',
+      imageUrl: 'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg',
+      imagePrompt: 'Handshake over a business meeting table',
+      category: 'Politics',
+      viralityDescription: 'Medium Spreading',
+      comments: [],
+      sources: REAL_SOURCES.Politics,
+    },
+    {
+      id: 'en-local-1',
+      headline: 'First Phase of New City Metro Project Inaugurated',
+      byline: 'By Jane Smith',
+      date: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago
+      body: 'The capital city witnessed the opening of the first phase of its metro project today, connecting the northern and southern districts. Attended by several officials, the new line is expected to serve over half a million commuters daily, significantly easing traffic congestion.',
+      imageUrl: 'https://images.pexels.com/photos/592798/pexels-photo-592798.jpeg',
+      imagePrompt: 'Modern subway train at a station',
+      category: 'Local',
+      viralityDescription: 'Fast Spreading',
+      comments: [],
+      sources: REAL_SOURCES.Local,
     },
     {
       id: 'en-sports-1',
