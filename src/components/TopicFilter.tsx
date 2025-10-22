@@ -12,7 +12,7 @@ const TopicFilter: React.FC<TopicFilterProps> = ({ language, activeTopic, onSele
   const topics = TOPIC_FILTERS[language];
   
   return (
-    <div className="w-full overflow-x-auto pb-2" aria-label="Article topic filter">
+    <div className="w-full overflow-x-auto pb-2 custom-scrollbar" aria-label="Article topic filter">
       <div className="flex items-center space-x-2 rtl:space-x-reverse whitespace-nowrap">
         {topics.map((topic) => (
           <button

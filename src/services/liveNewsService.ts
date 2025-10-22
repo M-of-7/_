@@ -95,12 +95,13 @@ export async function refreshLiveNews(
   try {
     const functionUrl = `${supabaseUrl}/functions/v1/fetch-live-news`;
 
-    // FIX: Pass the category directly without incorrect mapping. 'all' will now correctly fetch all categories.
     const response = await fetch(
       `${functionUrl}?language=${language}&category=${category}`,
       {
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
+          // FIX: Add the 'apikey' header which is required by the Supabase gateway to prevent 404 errors.
+          'apikey': supabaseKey!,
         },
       }
     );
