@@ -137,16 +137,27 @@ Deno.serve(async (req: Request) => {
     }
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
-    const url = new URL(req.url);
-    const requestedCategory = url.searchParams.get('category') || 'all';
-    const requestedLanguage = (url.searchParams.get('language') || 'en') as 'ar' | 'en';
+    // FIX: Read parameters from the POST body, as sent by `supabase.functions.invoke`.
+    const { language, category } = await req.json();
+    const requestedCategory = category || 'all';
+    const requestedLanguage = (language || 'en') as 'ar' | 'en';
 
     let feedsToFetch = RSS_FEEDS.filter(f => f.language === requestedLanguage);
     if (requestedCategory !== 'all') {
       feedsToFetch = feedsToFetch.filter(f => f.category === requestedCategory);
     }
 
-    const allArticles: any[] = (await Promise.all(feedsToFetch.map(parseRSS))).flat();
+    const allArticlesRaw: any[] = (await Promise.all(feedsToFetch.map(parseRSS))).flat();
+    
+    // FIX: Deduplicate articles from different feeds based on their URL before processing.
+    // This prevents the same story from appearing multiple times.
+    const uniqueArticles = new Map<string, any>();
+    for (const article of allArticlesRaw) {
+      if (article.url && !uniqueArticles.has(article.url)) {
+        uniqueArticles.set(article.url, article);
+      }
+    }
+    const allArticles = Array.from(uniqueArticles.values());
     const insertedArticles = [];
 
     let query = supabase
@@ -156,7 +167,6 @@ Deno.serve(async (req: Request) => {
       .order('published_at', { ascending: false })
       .limit(50);
 
-    // FIX: Filter by category for more accurate deduplication
     if (requestedCategory !== 'all') {
       query = query.eq('category', requestedCategory);
     }

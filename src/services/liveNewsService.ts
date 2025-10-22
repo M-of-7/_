@@ -88,31 +88,24 @@ export async function refreshLiveNews(
   language: 'ar' | 'en',
   category: string = 'all'
 ): Promise<void> {
-  if (!supabaseUrl) {
-    throw new Error('Supabase not configured');
+  if (!supabase) {
+    throw new Error('Supabase not configured for invoke');
   }
 
   try {
-    const functionUrl = `${supabaseUrl}/functions/v1/fetch-live-news`;
+    // FIX: Use the official Supabase SDK's `invoke` method. This handles authentication
+    // headers correctly and is the recommended way to call Edge Functions,
+    // solving the persistent 404 error.
+    const { data, error } = await supabase.functions.invoke('fetch-live-news', {
+        body: { language, category },
+    });
 
-    const response = await fetch(
-      `${functionUrl}?language=${language}&category=${category}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          // FIX: Add the 'apikey' header which is required by the Supabase gateway to prevent 404 errors.
-          'apikey': supabaseKey!,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Edge Function error:', errorText);
-      throw new Error(`Failed to refresh news. Server responded with ${response.status}`);
+    if (error) {
+        console.error('Edge Function invocation error:', error);
+        throw new Error(`Failed to refresh news. ${error.message}`);
     }
 
-    const result = await response.json();
+    const result = data; // The data is already parsed JSON
     console.log(`Refreshed news: ${result.inserted} new articles inserted out of ${result.total} fetched`);
   } catch (error) {
     console.error('Error refreshing live news:', error);

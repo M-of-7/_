@@ -211,9 +211,10 @@ const addFriend = async (friendId: string): Promise<void> => {
     if (!userId) throw new Error('User not logged in');
     if (userId === friendId) throw new Error("Cannot add yourself as a friend.");
 
-    // Fix: Explicitly type the insert payload to help TypeScript resolve the correct insert overload.
+    // Fix: Remove explicit typing to allow for better type inference by the Supabase client.
+    // The explicit type, while structurally correct, might conflict with the library's generic type resolution.
     // Add friendship in both directions for easy querying
-    const friendshipsToInsert: Database['public']['Tables']['friendships']['Insert'][] = [
+    const friendshipsToInsert = [
         { user_id: userId, friend_id: friendId },
         { user_id: friendId, friend_id: userId } 
     ];
@@ -258,18 +259,17 @@ const sendMessage = async (receiverId: string, content: string, articleId?: stri
   const senderId = getCurrentUserId();
   if (!senderId) throw new Error('User not logged in');
 
-  // Fix: Explicitly type the insert payload and handle optional articleId to help TypeScript resolve the correct insert overload.
-  const messageData: Database['public']['Tables']['messages']['Insert'] = {
+  // Fix: Remove explicit typing and build the object to allow for better type inference.
+  // The insert method is also changed to accept an array for consistency and to avoid potential
+  // issues with the single-object insert overload.
+  const messageData = {
       sender_id: senderId,
       receiver_id: receiverId,
       content: content,
+      ...(articleId && { article_id: articleId }),
   };
 
-  if (articleId) {
-    messageData.article_id = articleId;
-  }
-
-  const { error } = await supabase.from('messages').insert(messageData);
+  const { error } = await supabase.from('messages').insert([messageData]);
 
   if (error) {
       console.error("Error sending message:", error);
