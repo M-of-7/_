@@ -156,7 +156,7 @@ const getFriends = async (): Promise<Friendship[]> => {
     return [];
   }
   
-  return data.map((item: any) => ({
+  return (data || []).filter(item => item.profiles).map((item: any) => ({
       id: item.id,
       userId: userId,
       friendId: item.friend_id,
@@ -211,10 +211,9 @@ const addFriend = async (friendId: string): Promise<void> => {
     if (!userId) throw new Error('User not logged in');
     if (userId === friendId) throw new Error("Cannot add yourself as a friend.");
 
-    // Fix: Remove explicit typing to allow for better type inference by the Supabase client.
-    // The explicit type, while structurally correct, might conflict with the library's generic type resolution.
-    // Add friendship in both directions for easy querying
-    const friendshipsToInsert = [
+    // FIX: Explicitly type the array being inserted to match the Supabase schema.
+    // This resolves type inference failures where the `insert` method incorrectly expects `never`.
+    const friendshipsToInsert: Database['public']['Tables']['friendships']['Insert'][] = [
         { user_id: userId, friend_id: friendId },
         { user_id: friendId, friend_id: userId } 
     ];
@@ -259,15 +258,16 @@ const sendMessage = async (receiverId: string, content: string, articleId?: stri
   const senderId = getCurrentUserId();
   if (!senderId) throw new Error('User not logged in');
 
-  // Fix: Remove explicit typing and build the object to allow for better type inference.
-  // The insert method is also changed to accept an array for consistency and to avoid potential
-  // issues with the single-object insert overload.
-  const messageData = {
+  // FIX: Explicitly define the message object's type to ensure it matches
+  // the Supabase 'messages.Insert' schema, avoiding type inference issues with conditional properties.
+  const messageData: Database['public']['Tables']['messages']['Insert'] = {
       sender_id: senderId,
       receiver_id: receiverId,
       content: content,
-      ...(articleId && { article_id: articleId }),
   };
+  if (articleId) {
+    messageData.article_id = articleId;
+  }
 
   const { error } = await supabase.from('messages').insert([messageData]);
 

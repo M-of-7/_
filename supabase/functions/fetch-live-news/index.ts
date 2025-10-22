@@ -5,7 +5,7 @@ import { DOMParser } from 'npm:linkedom@0.18.4';
 // @ts-ignore: Import Gemini AI
 import { GoogleGenAI, Modality } from 'npm:@google/genai@^1.26.0';
 // @ts-ignore
-import { decode } from 'npm:@std/encoding/base64';
+import { toByteArray } from 'npm:base64-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -207,7 +207,7 @@ Deno.serve(async (req: Request) => {
         const part = imageResponse.candidates?.[0]?.content?.parts?.[0];
         if (part?.inlineData) {
             const base64Data = part.inlineData.data;
-            const decodedData = decode(base64Data);
+            const decodedData = toByteArray(base64Data);
             const filePath = `public/${requestedLanguage}/${crypto.randomUUID()}.png`;
             
             const { error: uploadError } = await supabase.storage.from('article_images').upload(filePath, decodedData, { contentType: 'image/png', upsert: true });
