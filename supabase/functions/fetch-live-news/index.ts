@@ -181,12 +181,18 @@ Deno.serve(async (req: Request) => {
     // @ts-ignore
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
     // @ts-ignore
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    let ai: GoogleGenAI | null = null;
-    if (geminiApiKey) {
-      ai = new GoogleGenAI({ apiKey: geminiApiKey });
+    // Improvement: Fail fast if the API key secret is not configured.
+    if (!geminiApiKey) {
+      console.error('CRITICAL: Missing GEMINI_API_KEY secret in Supabase project settings.');
+      return new Response(
+        JSON.stringify({ error: 'Missing GEMINI_API_KEY secret in Supabase project settings. Please add it in your project dashboard under Settings > Edge Functions.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
     const url = new URL(req.url);
     const requestedCategory = url.searchParams.get('category') || 'all';
@@ -217,19 +223,17 @@ Deno.serve(async (req: Request) => {
       if (!existing) {
         let viralityDescription = 'Low';
 
-        if (ai) {
-          try {
-            const response = await ai.models.generateContent({
-              model: 'gemini-2.5-flash',
-              contents: `Based on the following news headline, rate its potential virality as "Low", "Medium", or "Fast". Consider factors like emotional impact, broad appeal, and urgency. Respond with only one word: Low, Medium, or Fast.\n\nHeadline: "${article.title}"`,
-            });
-            const textResponse = response.text.trim();
-            if (['Low', 'Medium', 'Fast'].includes(textResponse)) {
-                viralityDescription = textResponse;
-            }
-          } catch(e) {
-            console.error(`Gemini API error for headline "${article.title}":`, e.message);
+        try {
+          const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Based on the following news headline, rate its potential virality as "Low", "Medium", or "Fast". Consider factors like emotional impact, broad appeal, and urgency. Respond with only one word: Low, Medium, or Fast.\n\nHeadline: "${article.title}"`,
+          });
+          const textResponse = response.text.trim();
+          if (['Low', 'Medium', 'Fast'].includes(textResponse)) {
+              viralityDescription = textResponse;
           }
+        } catch(e) {
+          console.error(`Gemini API error for headline "${article.title}":`, e.message);
         }
         
         const { data, error } = await supabase
