@@ -3,10 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>suhf</title>
+    <title>suhf - AI-Generated Newspaper</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗞️</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Merriweather:wght@400;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
   <script type="importmap">
 {
   "imports": {
@@ -19,22 +20,14 @@
     "@tanstack/react-query": "https://aistudiocdn.com/@tanstack/react-query@^5.90.5",
     "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.76.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4"
+    "@vitejs/plugin-react": "https://aistudiocdn.com/vitejs/plugin-react@^5.0.4"
   }
 }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-stone-100 text-stone-800">
-    <div id="root">
-      <!-- A simple, versioned fallback message. A major change from the previous version to help break caches. -->
-      <div style="padding: 4rem; text-align: center; font-family: sans-serif; line-height: 1.6;">
-        <h1 style="font-size: 2rem; font-weight: bold; color: #333;">جاري تحميل صحف v1.5.0...</h1>
-        <h1 style="font-size: 2rem; font-weight: bold; color: #333; margin-top: 1rem;">Loading suhf v1.5.0...</h1>
-        <p style="margin-top: 1rem; color: #666;">If you see this message for more than a few seconds, please try a hard refresh (Ctrl+Shift+R).</p>
-      </div>
-    </div>
-    <!-- This is the standard entry point for a Vite application. -->
+  <body>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 <script type="module" src="/index.tsx"></script>
 </body>
