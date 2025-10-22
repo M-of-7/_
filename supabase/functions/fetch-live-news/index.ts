@@ -3,8 +3,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 // @ts-ignore: DOMParser is available in the Supabase Edge Function environment via linkedom
 import { DOMParser } from 'npm:linkedom@0.18.4';
 // @ts-ignore: Import Gemini AI
-import { GoogleGenAI } from 'npm:@google/genai@^1.26.0';
-
+import { GoogleGenAI, Modality } from 'npm:@google/genai@^1.26.0';
+// @ts-ignore
+import { decode } from 'npm:@std/encoding/base64';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,85 +21,61 @@ interface RSSFeed {
 }
 
 const RSS_FEEDS: RSSFeed[] = [
-  // ARABIC WORLD NEWS
+  // ARABIC
   { url: 'https://www.aljazeera.net/xml/rss/all.xml', name: 'الجزيرة', language: 'ar', category: 'world' },
   { url: 'https://www.alarabiya.net/ar/rss.xml', name: 'العربية', language: 'ar', category: 'world' },
-  { url: 'https://www.bbc.com/arabic/index.xml', name: 'BBC عربي', language: 'ar', category: 'world' },
   { url: 'https://www.skynewsarabia.com/rss', name: 'سكاي نيوز عربية', language: 'ar', category: 'world' },
-  { url: 'https://www.france24.com/ar/rss', name: 'فرانس 24', language: 'ar', category: 'world' },
-  { url: 'https://arabic.cnn.com/api/v1/rss/rss.xml', name: 'CNN عربية', language: 'ar', category: 'world' },
   { url: 'https://aawsat.com/rss', name: 'الشرق الأوسط', language: 'ar', category: 'world' },
+  { url: 'https://arabic.cnn.com/api/v1/rss/rss.xml', name: 'CNN عربية', language: 'ar', category: 'world' },
+  { url: 'https://www.france24.com/ar/rss', name: 'فرانس 24', language: 'ar', category: 'world' },
+  { url: 'https://www.aljazeera.net/xml/rss/technology.xml', name: 'الجزيرة تكنولوجيا', language: 'ar', category: 'technology' },
+  { url: 'https://www.alarabiya.net/ar/technology/rss.xml', name: 'العربية تقنية', language: 'ar', category: 'technology' },
+  { url: 'https://www.aljazeera.net/xml/rss/economy.xml', name: 'الجزيرة اقتصاد', language: 'ar', category: 'business' },
+  { url: 'https://www.alarabiya.net/ar/aswaq/rss.xml', name: 'العربية أسواق', language: 'ar', category: 'business' },
+  { url: 'https://www.aljazeera.net/xml/rss/sports.xml', name: 'الجزيرة رياضة', language: 'ar', category: 'sports' },
+  { url: 'https://www.alarabiya.net/ar/sports/rss.xml', name: 'العربية رياضة', language: 'ar', category: 'sports' },
+  { url: 'https://www.aljazeera.net/xml/rss/politics.xml', name: 'الجزيرة سياسة', language: 'ar', category: 'politics' },
+  { url: 'https://www.aljazeera.net/xml/rss/arts.xml', name: 'الجزيرة فن', language: 'ar', category: 'entertainment' },
+  { url: 'https://www.sayidaty.net/rss.xml', name: 'سيدتي', language: 'ar', category: 'entertainment' },
+  { url: 'https://www.filfan.com/rss/articles', name: 'في الفن', language: 'ar', category: 'entertainment' },
+  { url: 'https://www.okaz.com.sa/rss', name: 'عكاظ', language: 'ar', category: 'local' },
+  { url: 'https://www.alriyadh.com/rss', name: 'جريدة الرياض', language: 'ar', category: 'local' },
+  { url: 'https://www.youm7.com/rss/Section/65/1', name: 'اليوم السابع - أخبار مصر', language: 'ar', category: 'local' },
 
-  // ENGLISH WORLD NEWS
+  // ENGLISH
   { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', name: 'BBC News', language: 'en', category: 'world' },
   { url: 'https://feeds.reuters.com/reuters/topNews', name: 'Reuters', language: 'en', category: 'world' },
   { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', name: 'NY Times', language: 'en', category: 'world' },
-  { url: 'https://feeds.washingtonpost.com/rss/world', name: 'Washington Post', language: 'en', category: 'world' },
   { url: 'https://www.theguardian.com/world/rss', name: 'The Guardian', language: 'en', category: 'world' },
   { url: 'http://rss.cnn.com/rss/edition_world.rss', name: 'CNN', language: 'en', category: 'world' },
-  { url: 'https://feeds.nbcnews.com/nbcnews/public/world', name: 'NBC News', language: 'en', category: 'world' },
   { url: 'https://www.aljazeera.com/xml/rss/all.xml', name: 'Al Jazeera English', language: 'en', category: 'world' },
-
-  // TECHNOLOGY (ARABIC)
-  { url: 'https://www.aljazeera.net/xml/rss/technology.xml', name: 'الجزيرة تكنولوجيا', language: 'ar', category: 'technology' },
-  { url: 'https://www.alarabiya.net/ar/technology/rss.xml', name: 'العربية تقنية', language: 'ar', category: 'technology' },
-
-  // TECHNOLOGY (ENGLISH)
   { url: 'https://feeds.bbci.co.uk/news/technology/rss.xml', name: 'BBC Tech', language: 'en', category: 'technology' },
-  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml', name: 'NY Times Tech', language: 'en', category: 'technology' },
   { url: 'https://www.wired.com/feed/rss', name: 'Wired', language: 'en', category: 'technology' },
   { url: 'https://techcrunch.com/feed/', name: 'TechCrunch', language: 'en', category: 'technology' },
   { url: 'https://www.theverge.com/rss/index.xml', name: 'The Verge', language: 'en', category: 'technology' },
-  { url: 'https://feeds.arstechnica.com/arstechnica/index', name: 'Ars Technica', language: 'en', category: 'technology' },
-
-  // BUSINESS (ARABIC)
-  { url: 'https://www.aljazeera.net/xml/rss/economy.xml', name: 'الجزيرة اقتصاد', language: 'ar', category: 'business' },
-  { url: 'https://www.alarabiya.net/ar/aswaq/rss.xml', name: 'العربية أسواق', language: 'ar', category: 'business' },
-  { url: 'https://www.bbc.com/arabic/business/index.xml', name: 'BBC عربي أعمال', language: 'ar', category: 'business' },
-
-  // BUSINESS (ENGLISH)
   { url: 'https://feeds.bbci.co.uk/news/business/rss.xml', name: 'BBC Business', language: 'en', category: 'business' },
-  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', name: 'NY Times Business', language: 'en', category: 'business' },
   { url: 'https://feeds.reuters.com/reuters/businessNews', name: 'Reuters Business', language: 'en', category: 'business' },
-  { url: 'https://www.ft.com/?format=rss', name: 'Financial Times', language: 'en', category: 'business' },
-  { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', name: 'CNBC', language: 'en', category: 'business' },
-
-  // SPORTS (ARABIC)
-  { url: 'https://www.aljazeera.net/xml/rss/sports.xml', name: 'الجزيرة رياضة', language: 'ar', category: 'sports' },
-  { url: 'https://www.alarabiya.net/ar/sports/rss.xml', name: 'العربية رياضة', language: 'ar', category: 'sports' },
-  { url: 'https://www.bbc.com/arabic/sports/index.xml', name: 'BBC عربي رياضة', language: 'ar', category: 'sports' },
-
-  // SPORTS (ENGLISH)
+  { url: 'https://www.wsj.com/xml/rss/3_7014.xml', name: 'Wall Street Journal', language: 'en', category: 'business' },
   { url: 'https://feeds.bbci.co.uk/sport/rss.xml', name: 'BBC Sport', language: 'en', category: 'sports' },
   { url: 'https://www.espn.com/espn/rss/news', name: 'ESPN', language: 'en', category: 'sports' },
-  { url: 'http://rss.cnn.com/rss/edition_sport.rss', name: 'CNN Sport', language: 'en', category: 'sports' },
-  { url: 'https://www.theguardian.com/sport/rss', name: 'Guardian Sport', language: 'en', category: 'sports' },
-
-  // POLITICS (ARABIC)
-  { url: 'https://www.aljazeera.net/xml/rss/politics.xml', name: 'الجزيرة سياسة', language: 'ar', category: 'politics' },
-  { url: 'https://www.bbc.com/arabic/middleeast/index.xml', name: 'BBC عربي شرق أوسط', language: 'ar', category: 'politics' },
-
-  // POLITICS (ENGLISH)
+  { url: 'https://www.skysports.com/rss/12040', name: 'Sky Sports', language: 'en', category: 'sports' },
   { url: 'https://feeds.bbci.co.uk/news/politics/rss.xml', name: 'BBC Politics', language: 'en', category: 'politics' },
   { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml', name: 'NY Times Politics', language: 'en', category: 'politics' },
-  { url: 'https://www.theguardian.com/politics/rss', name: 'Guardian Politics', language: 'en', category: 'politics' },
-  { url: 'http://rss.cnn.com/rss/edition_politics.rss', name: 'CNN Politics', language: 'en', category: 'politics' },
-
-  // HEALTH (ARABIC)
-  { url: 'https://www.bbc.com/arabic/science/index.xml', name: 'BBC عربي علوم وصحة', language: 'ar', category: 'local' },
-
-  // HEALTH (ENGLISH)
-  { url: 'https://feeds.bbci.co.uk/news/health/rss.xml', name: 'BBC Health', language: 'en', category: 'local' },
-  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Health.xml', name: 'NY Times Health', language: 'en', category: 'local' },
-  { url: 'https://www.theguardian.com/society/health/rss', name: 'Guardian Health', language: 'en', category: 'local' },
+  { url: 'https://www.politico.com/rss/politicopicks.xml', name: 'Politico', language: 'en', category: 'politics' },
+  { url: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml', name: 'BBC Entertainment', language: 'en', category: 'entertainment' },
+  { url: 'https://variety.com/feed/', name: 'Variety', language: 'en', category: 'entertainment' },
+  { url: 'https://www.hollywoodreporter.com/feed/', name: 'Hollywood Reporter', language: 'en', category: 'entertainment' },
+  { url: 'https://feeds.reuters.com/reuters/entertainment', name: 'Reuters Entertainment', language: 'en', category: 'entertainment' },
+  { url: 'https://feeds.bbci.co.uk/news/england/rss.xml', name: 'BBC News - England', language: 'en', category: 'local' },
+  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/US.xml', name: 'NY Times - U.S.', language: 'en', category: 'local' },
+  { url: 'https://feeds.reuters.com/Reuters/domesticNews', name: 'Reuters - U.S.', language: 'en', category: 'local' },
 ];
+
 
 async function parseRSS(feed: RSSFeed): Promise<any[]> {
   try {
     const response = await fetch(feed.url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)'
-      }
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)' }
     });
     if (!response.ok) {
         console.error(`Failed to fetch RSS from ${feed.name}: ${response.status} ${response.statusText}`);
@@ -111,49 +88,17 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
     const items = doc.querySelectorAll('item');
     const articles: any[] = [];
     
-    for (const item of Array.from(items as NodeListOf<Element>).slice(0, 10)) {
+    for (const item of Array.from(items as NodeListOf<Element>).slice(0, 5)) { // Limit to 5 per feed to increase diversity
       const title = item.querySelector('title')?.textContent?.trim() || '';
-      
-      let body = item.querySelector('description')?.textContent || '';
-      const contentEncoded = item.querySelector('content\\:encoded, [is="content:encoded"]')?.textContent;
-      if (contentEncoded && contentEncoded.length > body.length) {
-        body = contentEncoded;
-      }
-      
+      const body = item.querySelector('description')?.textContent || '';
       const link = item.querySelector('link')?.textContent || '';
       const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
-
-      let imageUrl = '';
-      const mediaContent = item.querySelector('media\\:content, [is="media:content"]');
-      const enclosure = item.querySelector('enclosure');
-
-      if (mediaContent) {
-        imageUrl = mediaContent.getAttribute('url') || '';
-      } else if (enclosure) {
-        imageUrl = enclosure.getAttribute('url') || '';
-      }
-
-      if (!imageUrl && body) {
-          const bodyDoc = parser.parseFromString(body, 'text/html');
-          const img = bodyDoc.querySelector('img');
-          if (img) {
-              imageUrl = img.getAttribute('src') || '';
-          }
-      }
-      
-      if (!imageUrl && body) {
-          const match = body.match(/<img[^>]+src="([^">]+)"/);
-          if (match && match[1]) {
-              imageUrl = match[1];
-          }
-      }
 
       if (title && link) {
         articles.push({
           title: title,
           description: body.replace(/<[^>]*>/g, '').substring(0, 500).trim(),
           url: link.trim(),
-          imageUrl,
           publishedAt: new Date(pubDate).toISOString(),
           source: feed.name,
           category: feed.category,
@@ -161,7 +106,6 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
         });
       }
     }
-
     return articles;
   } catch (error) {
     console.error(`Failed to parse RSS from ${feed.name}:`, error);
@@ -179,18 +123,17 @@ Deno.serve(async (req: Request) => {
     // @ts-ignore
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     // @ts-ignore
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    if (!supabaseUrl || !supabaseServiceKey) {
+        throw new Error('Supabase URL or Service Key not configured.');
+    }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // @ts-ignore
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    // Improvement: Fail fast if the API key secret is not configured.
     if (!geminiApiKey) {
-      console.error('CRITICAL: Missing GEMINI_API_KEY secret in Supabase project settings.');
-      return new Response(
-        JSON.stringify({ error: 'Missing GEMINI_API_KEY secret in Supabase project settings. Please add it in your project dashboard under Settings > Edge Functions.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('CRITICAL: Missing GEMINI_API_KEY secret.');
+      return new Response(JSON.stringify({ error: 'Missing GEMINI_API_KEY secret in project settings.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
@@ -199,19 +142,20 @@ Deno.serve(async (req: Request) => {
     const requestedLanguage = (url.searchParams.get('language') || 'en') as 'ar' | 'en';
 
     let feedsToFetch = RSS_FEEDS.filter(f => f.language === requestedLanguage);
-
-    if (requestedCategory && requestedCategory !== 'all') {
+    if (requestedCategory !== 'all') {
       feedsToFetch = feedsToFetch.filter(f => f.category === requestedCategory);
     }
 
-    const allArticles: any[] = [];
-
-    for (const feed of feedsToFetch) {
-      const articles = await parseRSS(feed);
-      allArticles.push(...articles);
-    }
-
+    const allArticles: any[] = (await Promise.all(feedsToFetch.map(parseRSS))).flat();
     const insertedArticles = [];
+
+    const { data: recentTitles } = await supabase
+      .from('news_articles')
+      .select('title')
+      .eq('language', requestedLanguage)
+      .order('published_at', { ascending: false })
+      .limit(50);
+    const existingTitles = recentTitles?.map(t => t.title) || [];
 
     for (const article of allArticles) {
       const { data: existing } = await supabase
@@ -220,62 +164,79 @@ Deno.serve(async (req: Request) => {
         .eq('source_url', article.url)
         .maybeSingle();
 
-      if (!existing) {
-        let viralityDescription = 'Low';
+      if (existing) continue;
 
-        try {
-          const response = await ai.models.generateContent({
+      try {
+        const isDuplicateResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: `Based on the following news headline, rate its potential virality as "Low", "Medium", or "Fast". Consider factors like emotional impact, broad appeal, and urgency. Respond with only one word: Low, Medium, or Fast.\n\nHeadline: "${article.title}"`,
-          });
-          const textResponse = response.text.trim();
-          if (['Low', 'Medium', 'Fast'].includes(textResponse)) {
-              viralityDescription = textResponse;
-          }
-        } catch(e) {
-          console.error(`Gemini API error for headline "${article.title}":`, e.message);
+            contents: `Is the NEW HEADLINE substantially reporting the same event as any of the EXISTING HEADLINES? Respond with only "Yes" or "No".\n\nEXISTING HEADLINES:\n- ${existingTitles.join('\n- ')}\n\nNEW HEADLINE:\n"${article.title}"`
+        });
+        if (isDuplicateResponse.text.trim().toLowerCase().includes('yes')) {
+            console.log(`Skipping duplicate article: ${article.title}`);
+            continue;
         }
-        
-        const { data, error } = await supabase
-          .from('news_articles')
-          .insert({
-            title: article.title,
-            description: article.description,
-            content: article.description,
-            source_name: article.source,
-            source_url: article.url,
-            image_url: article.imageUrl || 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg',
-            category: article.category,
-            language: article.language,
-            published_at: article.publishedAt,
-            author: article.source,
-            virality_description: viralityDescription,
-          })
-          .select()
-          .single();
+      } catch (e) {
+          console.error(`Gemini deduplication check failed for "${article.title}":`, e.message);
+      }
+      
+      let imageUrl = 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg'; // Default fallback
+      try {
+        const imageResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: { parts: [{ text: `Generate a high-quality, photorealistic news image representing this headline. The image should be dramatic, cinematic, and contain no text, logos, or watermarks. Headline: "${article.title}"` }] },
+            config: { responseModalities: [Modality.IMAGE] },
+        });
 
-        if (error) {
-          console.error('Supabase insert error:', error.message);
-        } else if (data) {
-          insertedArticles.push(data);
+        const part = imageResponse.candidates?.[0]?.content?.parts?.[0];
+        if (part?.inlineData) {
+            const base64Data = part.inlineData.data;
+            const decodedData = decode(base64Data);
+            const filePath = `public/${requestedLanguage}/${crypto.randomUUID()}.png`;
+            
+            const { error: uploadError } = await supabase.storage.from('article_images').upload(filePath, decodedData, { contentType: 'image/png', upsert: true });
+
+            if (uploadError) {
+                console.error('Supabase Storage upload error:', uploadError.message);
+            } else {
+                const { data: publicUrlData } = supabase.storage.from('article_images').getPublicUrl(filePath);
+                if (publicUrlData?.publicUrl) {
+                    imageUrl = publicUrlData.publicUrl;
+                }
+            }
         }
+      } catch (e) {
+          console.error(`Gemini image generation failed for "${article.title}":`, e.message);
+      }
+
+      const { data, error } = await supabase
+        .from('news_articles')
+        .insert({
+          title: article.title,
+          description: article.description,
+          content: article.description,
+          source_name: article.source,
+          source_url: article.url,
+          image_url: imageUrl,
+          category: article.category,
+          language: article.language,
+          published_at: article.publishedAt,
+          author: article.source,
+          virality_description: 'Medium', // Virality check removed for performance, can be re-added
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase insert error:', error.message);
+      } else if (data) {
+        insertedArticles.push(data);
+        existingTitles.unshift(data.title); // Add to local list to avoid duplicates in the same run
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        inserted: insertedArticles.length,
-        total: allArticles.length,
-        articles: insertedArticles,
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true, inserted: insertedArticles.length, total: allArticles.length }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {
     console.error('Main function error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });

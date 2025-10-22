@@ -1,14 +1,107 @@
-import { createClient } from '@supabase/supabase-js';
+// Fix: Import SupabaseClient to use for typing the client instance.
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { authService } from './authService';
 
-// Consistent Supabase client initialization
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_URL;
-const supabaseKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_ANON_KEY;
+// Fix: Add database schema types for Supabase client.
+// This provides type-safety and fixes the 'insert' method errors.
+export interface Database {
+  public: {
+    Tables: {
+      friendships: {
+        Row: {
+          id: string;
+          user_id: string;
+          friend_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          friend_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          friend_id?: string;
+          created_at?: string;
+        };
+      };
+      messages: {
+        Row: {
+          id: string;
+          sender_id: string;
+          receiver_id: string;
+          content: string;
+          article_id: string | null;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          sender_id: string;
+          receiver_id: string;
+          content: string;
+          article_id?: string | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          sender_id?: string;
+          receiver_id?: string;
+          content?: string;
+          article_id?: string | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+      };
+      profiles: {
+        Row: {
+          id: string;
+          username: string;
+          display_name: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          id: string;
+          username: string;
+          display_name: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          username?: string;
+          display_name?: string;
+          updated_at?: string | null;
+        };
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
+}
 
-let supabase: ReturnType<typeof createClient> | null = null;
+
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+const supabaseKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+
+// Fix: Use the generic `SupabaseClient<Database>` type for the supabase instance.
+let supabase: SupabaseClient<Database> | null = null;
 if (supabaseUrl && supabaseKey) {
   try {
-    supabase = createClient(supabaseUrl, supabaseKey);
+    // Fix: Pass the Database type to createClient to get a typed client.
+    supabase = createClient<Database>(supabaseUrl, supabaseKey);
   } catch (error) {
     console.error("Error initializing Supabase client for messaging:", error);
   }
@@ -16,17 +109,21 @@ if (supabaseUrl && supabaseKey) {
 
 // Type Definitions
 export interface Profile {
-  id: string;
+  id: string; // This is the user's UUID from auth.users
   username: string;
-  displayName: string;
-  avatarUrl?: string;
+  display_name: string;
 }
 
+// For UI consistency, we rename fields on the fly
 export interface Friendship {
   id: string;
   userId: string;
   friendId: string;
-  friend?: Profile;
+  friend?: {
+    id: string;
+    username: string;
+    displayName: string;
+  };
 }
 
 export interface Message {
@@ -34,7 +131,7 @@ export interface Message {
   senderId: string;
   receiverId: string;
   content: string;
-  articleId?: string;
+  articleId?: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -49,61 +146,163 @@ const getFriends = async (): Promise<Friendship[]> => {
   const userId = getCurrentUserId();
   if (!userId) return [];
 
-  // This is a mocked response as we don't have the user's friends data.
-  // A real implementation would query a 'friendships' table.
-  console.warn("Messaging Service: getFriends() is returning mocked data.");
-  return [
-    { id: '1', userId: userId, friendId: 'friend1', friend: { id: 'friend1', username: 'ai_buddy', displayName: 'AI Buddy' } },
-    { id: '2', userId: userId, friendId: 'friend2', friend: { id: 'friend2', username: 'news_fan', displayName: 'Newshound' } }
-  ];
+  const { data, error } = await supabase
+    .from('friendships')
+    .select('id, friend_id, profiles:friend_id(id, username, display_name)')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error("Error fetching friends:", error);
+    return [];
+  }
+  
+  return data.map((item: any) => ({
+      id: item.id,
+      userId: userId,
+      friendId: item.friend_id,
+      friend: {
+          id: item.profiles.id,
+          username: item.profiles.username,
+          displayName: item.profiles.display_name
+      }
+  }));
 };
 
+const searchUsers = async (query: string): Promise<Profile[]> => {
+    if (!supabase) throw new Error("Supabase not configured.");
+    const userId = getCurrentUserId();
+    if (!userId) return [];
+
+    const { data: friendsData, error: friendsError } = await supabase
+        .from('friendships')
+        .select('friend_id')
+        .eq('user_id', userId);
+
+    if (friendsError) {
+        console.error("Error fetching friend IDs for search exclusion:", friendsError);
+        return [];
+    }
+
+    const friendIds = (friendsData as any[])?.map(f => f.friend_id) ?? [];
+    const excludeIds = [userId, ...friendIds];
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name')
+        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .not('id', 'in', `(${excludeIds.join(',')})`)
+        .limit(10);
+        
+    if (error) {
+        console.error("Error searching users:", error);
+        return [];
+    }
+
+    return data.map((p: any) => ({
+        id: p.id,
+        username: p.username,
+        display_name: p.display_name
+    }));
+}
+
+const addFriend = async (friendId: string): Promise<void> => {
+    if (!supabase) throw new Error('Supabase not configured.');
+    const userId = getCurrentUserId();
+    if (!userId) throw new Error('User not logged in');
+    if (userId === friendId) throw new Error("Cannot add yourself as a friend.");
+
+    // Add friendship in both directions for easy querying
+    const { error } = await supabase.from('friendships').insert([
+        { user_id: userId, friend_id: friendId },
+        { user_id: friendId, friend_id: userId } 
+    ]);
+
+    if (error) {
+        console.error("Error adding friend:", error);
+        throw error;
+    }
+}
+
+
 const getMessages = async (friendId: string): Promise<Message[]> => {
-  if (!supabase) throw new Error('Supabase not configured for messaging.');
-  const userId = getCurrentUserId();
-  if (!userId) return [];
-  
-  // A real implementation would query the 'messages' table.
-  console.warn("Messaging Service: getMessages() is returning mocked data.");
-  return [
-      { id: 'msg1', senderId: friendId, receiverId: userId, content: 'Hey, have you seen the latest tech news?', isRead: true, createdAt: new Date(Date.now() - 60000 * 5).toISOString() },
-      { id: 'msg2', senderId: userId, receiverId: friendId, content: 'Not yet, anything interesting?', isRead: true, createdAt: new Date(Date.now() - 60000 * 4).toISOString() },
-  ];
+    if (!supabase) throw new Error('Supabase not configured.');
+    const userId = getCurrentUserId();
+    if (!userId) return [];
+
+    const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`(sender_id.eq.${userId},receiver_id.eq.${friendId}),(sender_id.eq.${friendId},receiver_id.eq.${userId})`)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching messages:', error);
+        return [];
+    }
+    return data.map((m: any) => ({
+        id: m.id,
+        senderId: m.sender_id,
+        receiverId: m.receiver_id,
+        content: m.content,
+        articleId: m.article_id,
+        isRead: m.is_read,
+        createdAt: m.created_at,
+    }));
 };
+
 
 const sendMessage = async (receiverId: string, content: string, articleId?: string): Promise<void> => {
   if (!supabase) throw new Error('Supabase not configured for messaging.');
   const senderId = getCurrentUserId();
   if (!senderId) throw new Error('User not logged in');
 
-  console.log(`Simulating sending message to ${receiverId}:`, { content, articleId });
-  // A real implementation would insert into the 'messages' table.
-  // const { error } = await supabase.from('messages').insert({ ... });
-  return Promise.resolve();
-};
+  const { error } = await supabase.from('messages').insert({
+      sender_id: senderId,
+      receiver_id: receiverId,
+      content: content,
+      article_id: articleId,
+  });
 
-const markAsRead = async (messageIds: string[]): Promise<void> => {
-    if (!supabase || messageIds.length === 0) return;
-    console.log("Simulating marking messages as read:", messageIds);
-    // A real implementation would update the 'messages' table.
-    // const { error } = await supabase.from('messages').update({ is_read: true }).in('id', messageIds);
-    return Promise.resolve();
+  if (error) {
+      console.error("Error sending message:", error);
+      throw error;
+  }
 };
 
 const subscribeToMessages = (friendId: string, onNewMessage: (message: Message) => void): (() => void) => {
     if (!supabase) return () => {};
-    console.warn("Messaging Service: subscribeToMessages() is not implemented with real-time updates.");
-    // A real implementation would use Supabase Realtime channels.
-    // const channel = supabase.channel(...).on(...).subscribe();
-    // return () => supabase.removeChannel(channel);
-    return () => {}; // Return an empty unsubscribe function
-};
+    const userId = getCurrentUserId();
 
+    const channel = supabase.channel(`messages-${userId}-${friendId}`)
+        .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'messages',
+            filter: `receiver_id=eq.${userId}`
+        }, (payload) => {
+            const newMessage = payload.new as any;
+            if (newMessage.sender_id === friendId) {
+                onNewMessage({
+                    id: newMessage.id,
+                    senderId: newMessage.sender_id,
+                    receiverId: newMessage.receiver_id,
+                    content: newMessage.content,
+                    articleId: newMessage.article_id,
+                    isRead: newMessage.is_read,
+                    createdAt: newMessage.created_at,
+                });
+            }
+        })
+        .subscribe();
+
+    return () => { supabase.removeChannel(channel) };
+};
 
 export const messagingService = {
   getFriends,
   getMessages,
   sendMessage,
-  markAsRead,
   subscribeToMessages,
+  searchUsers,
+  addFriend,
 };

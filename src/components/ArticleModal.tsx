@@ -35,7 +35,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
         <div className="p-6 border-b flex justify-between items-start">
           <div>
             <h2 id="article-title" className={`text-3xl font-bold text-stone-900 ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{article.headline}</h2>
-            <p className="text-stone-500 mt-1">{uiText.by} {article.byline} &middot; {new Date(article.date).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US')}</p>
+            <p className="text-stone-500 mt-1">{uiText.by} {article.byline} &middot; {new Date(article.date).toLocaleString(isRTL ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
           </div>
           <button onClick={onClose} aria-label={isRTL ? "إغلاق" : "Close"} className="text-3xl text-stone-400 hover:text-stone-800 transition-colors">&times;</button>
         </div>
@@ -46,7 +46,26 @@ const ArticleModal: React.FC<ArticleModalProps> = ({ article, onClose, language,
             <p className={`whitespace-pre-wrap leading-relaxed text-stone-800 ${isRTL ? 'font-serif-ar' : 'font-serif-en'}`}>{article.body}</p>
           </div>
 
-          <div className="px-8 pb-8">
+          {article.sources && article.sources.length > 0 && (
+            <div className="px-8 pt-4 pb-2 border-t border-stone-200">
+                <h4 className={`text-lg font-bold text-stone-700 mb-2 ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{uiText.sources}</h4>
+                <div className="flex flex-wrap gap-2">
+                    {article.sources.map(source => (
+                        <a 
+                            href={source.uri} 
+                            key={source.uri} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm bg-stone-100 hover:bg-stone-200 text-blue-700 font-semibold px-3 py-1 rounded-full transition-colors"
+                        >
+                           {source.title} &rarr;
+                        </a>
+                    ))}
+                </div>
+            </div>
+          )}
+
+          <div className="p-8">
             <h3 className={`text-2xl font-bold mb-4 ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{uiText.comments_title}</h3>
             <div className="space-y-4 mb-6">
               {article.comments.length > 0 ? (

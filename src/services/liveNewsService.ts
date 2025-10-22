@@ -44,7 +44,7 @@ function convertToArticle(news: NewsArticle): Article {
     byline: news.author || news.source_name,
     date: news.published_at,
     body: news.content || news.description,
-    imageUrl: news.image_url || 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg',
+    imageUrl: news.image_url, // Images are now AI-generated and reliable
     imagePrompt: '',
     category: news.category as any,
     viralityDescription: news.virality_description || undefined,
@@ -97,13 +97,12 @@ export async function refreshLiveNews(
 
     const categoryMap: Record<string, string> = {
       'all': 'world',
-      'local': 'world',
+      'local': 'local',
       'politics': 'politics',
       'business': 'business',
       'technology': 'technology',
       'sports': 'sports',
-      'entertainment': 'world',
-      'health': 'world',
+      'entertainment': 'entertainment',
     };
 
     const mappedCategory = categoryMap[category] || 'world';
