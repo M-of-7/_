@@ -116,8 +116,8 @@ const App: React.FC = () => {
         if (isLoading && articles.length === 0) {
             return (
                 <div className="container mx-auto p-4 lg:p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <div className="md:col-span-2 lg:col-span-2"><ArticleCardSkeleton isFeatured={true} /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                        <div className="md:col-span-2 xl:col-span-2"><ArticleCardSkeleton isFeatured={true} /></div>
                         <ArticleCardSkeleton />
                         <ArticleCardSkeleton />
                         <ArticleCardSkeleton />
@@ -168,17 +168,17 @@ const App: React.FC = () => {
                    <div className="col-span-full flex flex-col items-center justify-center py-32 text-center animate-fade-in">
                        <div className="bg-white p-10 rounded-2xl shadow-xl border border-stone-200">
                          <h3 className="text-3xl font-bold text-stone-700 font-header-en">{language === 'ar' ? 'لا توجد مقالات' : 'No Articles Found'}</h3>
-                         <p className="mt-3 text-stone-500 text-lg">{language === 'ar' ? 'جرّب تحديد فئة مختلفة.' : 'Try selecting a different topic.'}</p>
+                         <p className="mt-3 text-stone-500 text-lg">{language === 'ar' ? 'جرّب تحديث الفئة أو تحقق لاحقًا.' : 'Try refreshing the topic or check back later.'}</p>
                        </div>
                    </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
                   {filteredArticles.map((item, index) => {
                       const isFeatured = index === 0 && activeTopic === 'all' && searchQuery === '';
                       return (
                          <div
                             key={item.id}
-                            className={isFeatured ? 'md:col-span-2 lg:col-span-2' : ''}
+                            className={isFeatured ? 'md:col-span-2 xl:col-span-2' : ''}
                          >
                             <ArticleCard 
                                 article={item}

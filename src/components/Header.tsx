@@ -24,11 +24,11 @@ const Header: React.FC<HeaderProps> = (props) => {
   const isRTL = language === 'ar';
 
   return (
-    <header className="bg-white text-stone-800 p-4 sm:p-6 shadow-md border-b-4 border-stone-800">
+    <header className="bg-white text-stone-800 p-4 shadow-md border-b-4 border-stone-800">
       <div className="container mx-auto">
         <div className="flex justify-between items-center">
           {/* Left Section */}
-          <div className="flex-1 flex items-center gap-2 justify-start">
+          <div className="flex-1 flex items-center gap-2 justify-start min-w-0">
             <button onClick={toggleLanguage} className="font-semibold text-stone-600 hover:text-blue-600 transition-colors px-3 py-2 rounded-md text-sm">
               {isRTL ? 'English' : 'العربية'}
             </button>
@@ -49,12 +49,12 @@ const Header: React.FC<HeaderProps> = (props) => {
 
           {/* Center Section */}
           <div className="flex-shrink-0 text-center px-4">
-            <h1 className={`text-4xl sm:text-5xl font-extrabold tracking-tighter ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{title}</h1>
+            <h1 className={`text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter ${isRTL ? 'font-serif-ar' : 'font-header-en'}`}>{title}</h1>
             <p className="text-stone-500 mt-1 text-xs sm:text-sm">{subtitle}</p>
           </div>
           
           {/* Right Section */}
-          <div className="flex-1 flex items-center justify-end">
+          <div className="flex-1 flex items-center justify-end min-w-0">
             {user ? (
               <button 
                 onClick={onMessagingClick} 

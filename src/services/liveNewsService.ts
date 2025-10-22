@@ -95,20 +95,9 @@ export async function refreshLiveNews(
   try {
     const functionUrl = `${supabaseUrl}/functions/v1/fetch-live-news`;
 
-    const categoryMap: Record<string, string> = {
-      'all': 'world',
-      'local': 'local',
-      'politics': 'politics',
-      'business': 'business',
-      'technology': 'technology',
-      'sports': 'sports',
-      'entertainment': 'entertainment',
-    };
-
-    const mappedCategory = categoryMap[category] || 'world';
-
+    // FIX: Pass the category directly without incorrect mapping. 'all' will now correctly fetch all categories.
     const response = await fetch(
-      `${functionUrl}?language=${language}&category=${mappedCategory}`,
+      `${functionUrl}?language=${language}&category=${category}`,
       {
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
@@ -119,7 +108,7 @@ export async function refreshLiveNews(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Edge Function error:', errorText);
-      throw new Error('Failed to refresh news');
+      throw new Error(`Failed to refresh news. Server responded with ${response.status}`);
     }
 
     const result = await response.json();

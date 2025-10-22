@@ -116,7 +116,7 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
 // @ts-ignore
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -149,12 +149,19 @@ Deno.serve(async (req: Request) => {
     const allArticles: any[] = (await Promise.all(feedsToFetch.map(parseRSS))).flat();
     const insertedArticles = [];
 
-    const { data: recentTitles } = await supabase
+    let query = supabase
       .from('news_articles')
       .select('title')
       .eq('language', requestedLanguage)
       .order('published_at', { ascending: false })
       .limit(50);
+
+    // FIX: Filter by category for more accurate deduplication
+    if (requestedCategory !== 'all') {
+      query = query.eq('category', requestedCategory);
+    }
+    
+    const { data: recentTitles } = await query;
     const existingTitles = recentTitles?.map(t => t.title) || [];
 
     for (const article of allArticles) {
