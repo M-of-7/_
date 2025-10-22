@@ -141,12 +141,16 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
 
     const items = doc.querySelectorAll('item');
     const articles: any[] = [];
-
-    // FIX: Cast the NodeList from querySelectorAll to 'any' to allow property access on its items.
-    // The `item` variable was being inferred as `unknown`. Casting `items` to `any[]` ensures `item` is `any`.
-    for (const item of Array.from(items as any[]).slice(0, 10)) {
-      const title = item.querySelector('title')?.textContent || '';
-      const description = item.querySelector('description')?.textContent || '';
+    
+    for (const item of Array.from(items as NodeListOf<Element>).slice(0, 10)) {
+      const title = item.querySelector('title')?.textContent?.trim() || '';
+      
+      let body = item.querySelector('description')?.textContent || '';
+      const contentEncoded = item.querySelector('content\\:encoded')?.textContent;
+      if (contentEncoded && contentEncoded.length > body.length) {
+        body = contentEncoded;
+      }
+      
       const link = item.querySelector('link')?.textContent || '';
       const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();
 
@@ -160,10 +164,18 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
         imageUrl = enclosure.getAttribute('url') || '';
       }
 
+      // Fallback to find image in content
+      if (!imageUrl && body) {
+          const match = body.match(/<img[^>]+src="([^">]+)"/);
+          if (match && match[1]) {
+              imageUrl = match[1];
+          }
+      }
+
       if (title && link) {
         articles.push({
-          title: title.trim(),
-          description: description.replace(/<[^>]*>/g, '').trim(),
+          title: title,
+          description: body.replace(/<[^>]*>/g, '').trim(),
           url: link.trim(),
           imageUrl,
           publishedAt: new Date(pubDate).toISOString(),

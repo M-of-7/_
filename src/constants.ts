@@ -30,7 +30,7 @@ export const TOPIC_FILTERS = {
 export const UI_TEXT = {
   en: {
     title: 'suhf',
-    subtitle: 'Freshly AI-Generated News from Around the World',
+    subtitle: 'Freshly AI-Generated News / أخبار عاجلة تم إنشاؤها بواسطة الذكاء الاصطناعي',
     language_toggle: 'العربية',
     generating_title: 'Connecting to Live News Feed...',
     generating_subtitle: 'Syncing with our continuously updated global news database.',
@@ -80,7 +80,7 @@ export const UI_TEXT = {
   },
   ar: {
     title: 'صحف',
-    subtitle: 'أخبار عاجلة تم إنشاؤها بواسطة الذكاء الاصطناعي',
+    subtitle: 'أخبار عاجلة تم إنشاؤها بواسطة الذكاء الاصطناعي / Freshly AI-Generated News',
     language_toggle: 'English',
     generating_title: 'جاري الاتصال ببث الأخبار المباشر...',
     generating_subtitle: 'تتم المزامنة مع قاعدة بيانات الأخبار العالمية المحدثة باستمرار.',
