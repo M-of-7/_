@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { runDiagnostics, type DiagnosticResult } from '../services/diagnostics';
+import { runDiagnostics, type DiagnosticResult, type DiagnosticAction } from '../services/diagnostics';
 import SpinnerIcon from './icons/SpinnerIcon';
 
 interface DiagnosticsPanelProps {
@@ -7,8 +7,10 @@ interface DiagnosticsPanelProps {
 }
 
 const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
-  const [results, setResults] = useState<DiagnosticResult[]>([]);
+  const [results, setResults] = useState<Array<DiagnosticResult | DiagnosticAction>>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [actionStatus, setActionStatus] = useState<{ [key: number]: { status: 'running' | 'success' | 'error'; message: string } }>({});
+
 
   useEffect(() => {
     const performCheck = async () => {
@@ -36,6 +38,12 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
     }
   };
 
+  const handleActionClick = async (action: () => Promise<{ success: boolean; message: string }>, index: number) => {
+    setActionStatus(prev => ({ ...prev, [index]: { status: 'running', message: 'Executing...' } }));
+    const result = await action();
+    setActionStatus(prev => ({ ...prev, [index]: { status: result.success ? 'success' : 'error', message: result.message } }));
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl h-[70vh] flex flex-col overflow-hidden">
@@ -51,16 +59,35 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
             </div>
           ) : (
             <div className="space-y-6">
-              {results.map((result, index) => (
-                <div key={index} className={`p-4 rounded-md border ${getStatusClasses(result.status).replace('bg', 'border')}`}>
-                  <div className={`font-bold text-lg flex items-center gap-3 ${getStatusClasses(result.status).replace('bg-opacity-20', '').replace('bg', 'text')}`}>
-                    <span className={`flex items-center justify-center w-6 h-6 rounded-full text-sm font-mono ${getStatusClasses(result.status)}`}>{getStatusIcon(result.status)}</span>
-                    <span>{result.category}: {result.message}</span>
-                  </div>
-                  {result.details && <p className="mt-2 text-sm text-slate-600 pl-9"><strong>Details:</strong> {result.details}</p>}
-                  {result.fix && <p className="mt-1 text-sm text-slate-600 pl-9"><strong>Suggested Fix:</strong> <code className="bg-slate-200 p-1 rounded text-xs">{result.fix}</code></p>}
-                </div>
-              ))}
+              {results.map((result, index) => {
+                const action = (result as DiagnosticAction).action;
+                return (
+                    <div key={index} className={`p-4 rounded-md border ${getStatusClasses(result.status).replace('bg', 'border')}`}>
+                        <div className={`font-bold text-lg flex items-center gap-3 ${getStatusClasses(result.status).replace('bg-opacity-20', '').replace('bg', 'text')}`}>
+                        <span className={`flex items-center justify-center w-6 h-6 rounded-full text-sm font-mono ${getStatusClasses(result.status)}`}>{getStatusIcon(result.status)}</span>
+                        <span>{result.category}: {result.message}</span>
+                        </div>
+                        {result.details && <p className="mt-2 text-sm text-slate-600 pl-9"><strong>Details:</strong> {result.details}</p>}
+                        {result.fix && <p className="mt-1 text-sm text-slate-600 pl-9"><strong>Suggested Fix:</strong> <code className="bg-slate-200 p-1 rounded text-xs">{result.fix}</code></p>}
+                        {action && (
+                            <div className="pl-9 mt-3">
+                                <button
+                                    onClick={() => handleActionClick(action, index)}
+                                    disabled={actionStatus[index]?.status === 'running'}
+                                    className="px-4 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
+                                >
+                                    {actionStatus[index]?.status === 'running' ? 'Running...' : 'Run Action'}
+                                </button>
+                                {actionStatus[index] && (
+                                    <div className={`mt-2 p-2 rounded text-sm ${actionStatus[index].status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                        {actionStatus[index].message}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+              })}
             </div>
           )}
         </div>

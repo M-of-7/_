@@ -77,6 +77,7 @@ export const UI_TEXT = {
     ok_button: 'OK',
     end_of_feed_title: "You've Reached the End of the Feed",
     end_of_feed_body: "Our live archive currently holds articles from the past 30 days.",
+    try_again: 'Try Again',
   },
   ar: {
     title: 'صحف',
@@ -127,6 +128,7 @@ export const UI_TEXT = {
     ok_button: 'حسناً',
     end_of_feed_title: "لقد وصلت إلى نهاية البث",
     end_of_feed_body: "يحتوي أرشيفنا المباشر حاليًا على مقالات من آخر 30 يومًا.",
+    try_again: 'حاول مرة أخرى',
   }
 };
 

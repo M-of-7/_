@@ -40,7 +40,7 @@ export const useLiveNews = () => {
   const { language, activeTopic } = useAppStore();
   const queryClient = useQueryClient();
 
-  const { data: articles = [], isLoading, isError, refetch } = useQuery({
+  const { data: articles = [], isLoading, isError, refetch, error } = useQuery({
     queryKey: ['live-news', language, activeTopic],
     queryFn: () => fetchArticles(language, activeTopic),
     staleTime: 1000 * 60, // 1 minute
@@ -84,6 +84,7 @@ export const useLiveNews = () => {
     articles,
     isLoading,
     isError,
+    error,
     refreshNews,
     isLiveMode: isLiveNewsEnabled,
   };

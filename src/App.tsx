@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, lazy, Suspense, useCallback } from
 import { useQueryClient } from '@tanstack/react-query';
 import Header from './components/Header';
 import ArticleCard from './components/ArticleCard';
-import LoadingOverlay from './components/LoadingOverlay';
 import TopicFilter from './components/TopicFilter';
 import SpinnerIcon from './components/icons/SpinnerIcon';
 import ErrorIcon from './components/icons/ErrorIcon';
@@ -33,8 +32,6 @@ const App: React.FC = () => {
 
     const {
         language,
-        appStatus,
-        setAppStatus,
         user,
         isNewEditionAvailable,
         updateArticle,
@@ -45,7 +42,7 @@ const App: React.FC = () => {
     const queryClient = useQueryClient();
     const { toggleLanguage } = useAppInitializer();
     useAuth();
-    const { articles, isLoading, isError, refreshNews, isLiveMode } = useLiveNews();
+    const { articles, isLoading, isError, error, refreshNews, isLiveMode } = useLiveNews();
 
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -53,18 +50,6 @@ const App: React.FC = () => {
     const [showDiagnostics, setShowDiagnostics] = useState(false);
     
     const uiText = useMemo(() => UI_TEXT[language], [language]);
-
-    useEffect(() => {
-      // This effect is crucial for moving the app from 'initializing' to 'ready' or 'error' state,
-      // especially in "fast mode" where data loading is nearly instant.
-      if (appStatus === 'initializing' && !isLoading) {
-        if (isError) {
-          setAppStatus('error', uiText.error_subtitle);
-        } else {
-          setAppStatus('ready');
-        }
-      }
-    }, [isLoading, isError, appStatus, setAppStatus, uiText.error_subtitle]);
 
     useEffect(() => {
         document.documentElement.lang = language;
@@ -132,7 +117,15 @@ const App: React.FC = () => {
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <ErrorIcon className="w-20 h-20 text-red-400" />
                 <h2 className="mt-6 text-3xl font-bold text-stone-800">{uiText.error_title}</h2>
-                <p className="mt-2 max-w-lg text-lg text-stone-600">{uiText.error_subtitle}</p>
+                <p className="mt-2 max-w-lg text-lg text-stone-600">
+                  {error instanceof Error ? error.message : uiText.error_subtitle}
+                </p>
+                <button
+                    onClick={() => refreshNews()}
+                    className="mt-6 px-6 py-2 bg-stone-800 text-white font-bold rounded-lg hover:bg-black transition-colors"
+                >
+                    {uiText.try_again}
+                </button>
               </div>
            );
         }
@@ -198,8 +191,6 @@ const App: React.FC = () => {
   
     return (
         <div className={`min-h-screen ${language === 'ar' ? 'font-serif-ar' : 'font-serif-en'}`}>
-            {appStatus === 'initializing' && <LoadingOverlay title={uiText.generating_title} subtitle={uiText.generating_subtitle} />}
-            
             <Header
                 title={uiText.title}
                 subtitle={uiText.subtitle}

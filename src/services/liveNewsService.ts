@@ -87,7 +87,7 @@ export async function fetchLiveNews(
 export async function refreshLiveNews(
   language: 'ar' | 'en',
   category: string = 'all'
-): Promise<void> {
+): Promise<{ inserted: number; total: number }> {
   if (!supabase) {
     throw new Error('Supabase not configured for invoke');
   }
@@ -107,6 +107,7 @@ export async function refreshLiveNews(
 
     const result = data; // The data is already parsed JSON
     console.log(`Refreshed news: ${result.inserted} new articles inserted out of ${result.total} fetched`);
+    return result;
   } catch (error) {
     console.error('Error refreshing live news:', error);
     throw error;

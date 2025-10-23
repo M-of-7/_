@@ -1,3 +1,5 @@
+import { refreshLiveNews } from './liveNewsService';
+
 export interface DiagnosticResult {
   category: string;
   status: 'ok' | 'warning' | 'error';
@@ -6,21 +8,27 @@ export interface DiagnosticResult {
   fix?: string;
 }
 
-export class SystemDiagnostics {
-  private results: DiagnosticResult[] = [];
+export interface DiagnosticAction extends DiagnosticResult {
+    action?: () => Promise<{ success: boolean; message: string }>;
+}
 
-  async runAllChecks(): Promise<DiagnosticResult[]> {
+
+export class SystemDiagnostics {
+  private results: Array<DiagnosticResult | DiagnosticAction> = [];
+
+  async runAllChecks(): Promise<Array<DiagnosticResult | DiagnosticAction>> {
     this.results = [];
 
     await this.checkEnvironmentVariables();
     await this.checkSupabaseConnection();
     await this.checkDatabaseTables();
     await this.checkArticlesData();
+    this.addLiveNewsRefreshAction();
 
     return this.results;
   }
 
-  private addResult(result: DiagnosticResult) {
+  private addResult(result: DiagnosticResult | DiagnosticAction) {
     this.results.push(result);
   }
 
@@ -215,6 +223,25 @@ export class SystemDiagnostics {
         details: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+  
+  private addLiveNewsRefreshAction() {
+    this.addResult({
+        category: 'Live News Refresh',
+        status: 'ok',
+        message: 'Trigger live news update',
+        details: 'Manually invoke the Supabase Edge Function to fetch the latest articles from RSS feeds.',
+        action: async () => {
+            try {
+                const arResult = await refreshLiveNews('ar', 'all');
+                const enResult = await refreshLiveNews('en', 'all');
+                const message = `Refresh complete. Arabic: ${arResult.inserted} new articles. English: ${enResult.inserted} new articles. New content should appear shortly.`;
+                return { success: true, message };
+            } catch (error: any) {
+                return { success: false, message: `Action failed: ${error.message}` };
+            }
+        }
+    });
   }
 
   getStatusEmoji(status: 'ok' | 'warning' | 'error'): string {
