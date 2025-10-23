@@ -8,9 +8,9 @@ import { GoogleGenAI, Modality } from 'npm:@google/genai@^1.26.0';
 import { toByteArray } from 'npm:base64-js';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, apikey, Content-Type',
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'POST, OPTIONS',
+  'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 interface RSSFeed {
@@ -117,7 +117,7 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
 Deno.serve(async (req: Request) => {
   // This is critical for CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders, status: 200 });
   }
 
   try {
