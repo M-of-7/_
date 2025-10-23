@@ -1,7 +1,7 @@
 // @ts-ignore: Deno is a global object in Supabase Edge Functions
 import { createClient } from 'npm:@supabase/supabase-js@2';
-// @ts-ignore: DOMParser is available in the Supabase Edge Function environment via linkedom
-import { DOMParser } from 'npm:linkedom@0.18.4';
+// @ts-ignore: DOMParser is now imported from the official Deno module
+import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 // @ts-ignore: Import Gemini AI
 import { GoogleGenAI, Modality } from 'npm:@google/genai@^1.26.0';
 // @ts-ignore
@@ -9,8 +9,8 @@ import { toByteArray } from 'npm:base64-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 interface RSSFeed {
@@ -115,6 +115,7 @@ async function parseRSS(feed: RSSFeed): Promise<any[]> {
 
 // @ts-ignore
 Deno.serve(async (req: Request) => {
+  // This is critical for CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -137,7 +138,6 @@ Deno.serve(async (req: Request) => {
     }
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
-    // FIX: Read parameters from the POST body, as sent by `supabase.functions.invoke`.
     const { language, category } = await req.json();
     const requestedCategory = category || 'all';
     const requestedLanguage = (language || 'en') as 'ar' | 'en';
@@ -149,8 +149,6 @@ Deno.serve(async (req: Request) => {
 
     const allArticlesRaw: any[] = (await Promise.all(feedsToFetch.map(parseRSS))).flat();
     
-    // FIX: Deduplicate articles from different feeds based on their URL before processing.
-    // This prevents the same story from appearing multiple times.
     const uniqueArticles = new Map<string, any>();
     for (const article of allArticlesRaw) {
       if (article.url && !uniqueArticles.has(article.url)) {
@@ -238,7 +236,7 @@ Deno.serve(async (req: Request) => {
           language: article.language,
           published_at: article.publishedAt,
           author: article.source,
-          virality_description: 'Medium', // Virality check removed for performance, can be re-added
+          virality_description: 'Medium',
         })
         .select()
         .single();
@@ -247,7 +245,7 @@ Deno.serve(async (req: Request) => {
         console.error('Supabase insert error:', error.message);
       } else if (data) {
         insertedArticles.push(data);
-        existingTitles.unshift(data.title); // Add to local list to avoid duplicates in the same run
+        existingTitles.unshift(data.title);
       }
     }
 
