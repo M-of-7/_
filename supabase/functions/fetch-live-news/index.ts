@@ -10,7 +10,7 @@ import { toByteArray } from 'npm:base64-js';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'Authorization, X-Client-Info, apikey, Content-Type',
 };
 
 interface RSSFeed {
