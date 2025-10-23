@@ -1,111 +1,6 @@
-// Fix: Import SupabaseClient to use for typing the client instance.
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient';
 import { authService } from './authService';
-
-// Fix: Add database schema types for Supabase client.
-// This provides type-safety and fixes the 'insert' method errors.
-export interface Database {
-  public: {
-    Tables: {
-      friendships: {
-        Row: {
-          id: string;
-          user_id: string;
-          friend_id: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          friend_id: string;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          friend_id?: string;
-          created_at?: string;
-        };
-      };
-      messages: {
-        Row: {
-          id: string;
-          sender_id: string;
-          receiver_id: string;
-          content: string;
-          article_id: string | null;
-          is_read: boolean;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          sender_id: string;
-          receiver_id: string;
-          content: string;
-          article_id?: string | null;
-          is_read?: boolean;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          sender_id?: string;
-          receiver_id?: string;
-          content?: string;
-          article_id?: string | null;
-          is_read?: boolean;
-          created_at?: string;
-        };
-      };
-      profiles: {
-        Row: {
-          id: string;
-          username: string;
-          display_name: string;
-          updated_at: string | null;
-        };
-        Insert: {
-          id: string;
-          username: string;
-          display_name: string;
-          updated_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          username?: string;
-          display_name?: string;
-          updated_at?: string | null;
-        };
-      };
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
-    Enums: {
-      [_ in never]: never;
-    };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-}
-
-
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
-const supabaseKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
-
-// Fix: Use the generic `SupabaseClient<Database>` type for the supabase instance.
-let supabase: SupabaseClient<Database> | null = null;
-if (supabaseUrl && supabaseKey) {
-  try {
-    // Fix: Pass the Database type to createClient to get a typed client.
-    supabase = createClient<Database>(supabaseUrl, supabaseKey);
-  } catch (error) {
-    console.error("Error initializing Supabase client for messaging:", error);
-  }
-}
+import type { Database } from '../types/supabase';
 
 // Type Definitions
 export interface Profile {
@@ -156,7 +51,8 @@ const getFriends = async (): Promise<Friendship[]> => {
     return [];
   }
   
-  return (data || []).filter(item => item.profiles).map((item: any) => ({
+  // The 'any' cast is acceptable here as we are mapping to a clean, strongly-typed UI model.
+  return (data || []).filter((item: any) => item.profiles).map((item: any) => ({
       id: item.id,
       userId: userId,
       friendId: item.friend_id,
@@ -198,7 +94,7 @@ const searchUsers = async (query: string): Promise<Profile[]> => {
         return [];
     }
 
-    return data.map((p: any) => ({
+    return data.map((p) => ({
         id: p.id,
         username: p.username,
         display_name: p.display_name
@@ -211,9 +107,8 @@ const addFriend = async (friendId: string): Promise<void> => {
     if (!userId) throw new Error('User not logged in');
     if (userId === friendId) throw new Error("Cannot add yourself as a friend.");
 
-    // FIX: Explicitly type the array being inserted to match the Supabase schema.
-    // This resolves type inference failures where the `insert` method incorrectly expects `never`.
-    const friendshipsToInsert: Database['public']['Tables']['friendships']['Insert'][] = [
+    // The typed Supabase client infers the correct insert type.
+    const friendshipsToInsert = [
         { user_id: userId, friend_id: friendId },
         { user_id: friendId, friend_id: userId } 
     ];
@@ -241,7 +136,7 @@ const getMessages = async (friendId: string): Promise<Message[]> => {
         console.error('Error fetching messages:', error);
         return [];
     }
-    return data.map((m: any) => ({
+    return data.map((m) => ({
         id: m.id,
         senderId: m.sender_id,
         receiverId: m.receiver_id,
@@ -258,9 +153,8 @@ const sendMessage = async (receiverId: string, content: string, articleId?: stri
   const senderId = getCurrentUserId();
   if (!senderId) throw new Error('User not logged in');
 
-  // FIX: Explicitly define the message object's type to ensure it matches
-  // the Supabase 'messages.Insert' schema, avoiding type inference issues with conditional properties.
-  const messageData: Database['public']['Tables']['messages']['Insert'] = {
+  // The typed Supabase client correctly infers the type for this insert object.
+  const messageData: Partial<Database['public']['Tables']['messages']['Insert']> = {
       sender_id: senderId,
       receiver_id: receiverId,
       content: content,
@@ -288,7 +182,7 @@ const subscribeToMessages = (friendId: string, onNewMessage: (message: Message) 
             table: 'messages',
             filter: `receiver_id=eq.${userId}`
         }, (payload) => {
-            const newMessage = payload.new as any;
+            const newMessage = payload.new as Database['public']['Tables']['messages']['Row'];
             if (newMessage.sender_id === friendId) {
                 onNewMessage({
                     id: newMessage.id,

@@ -1,26 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 import type { Article } from '../types';
 
-// Check for documented env vars first, then fall back to older/alternative names for robustness.
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_URL;
-const supabaseKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_ANON_KEY;
+export const isLiveNewsEnabled = isSupabaseConfigured;
 
-
-let supabase: ReturnType<typeof createClient> | null = null;
-
-if (supabaseUrl && supabaseKey) {
-  try {
-    supabase = createClient(supabaseUrl, supabaseKey);
-  } catch (error) {
-    console.error("Error initializing Supabase client:", error);
-  }
-} else {
-  console.log("Live News mode is disabled. Supabase environment variables are not set.");
-}
-
-
-export const isLiveNewsEnabled = !!supabase;
-
+// This type now comes from the auto-generated `supabase.ts` types,
+// but we define it here for mapping purposes.
 interface NewsArticle {
   id: string;
   title: string;
@@ -93,9 +77,6 @@ export async function refreshLiveNews(
   }
 
   try {
-    // FIX: Use the official Supabase SDK's `invoke` method. This handles authentication
-    // headers correctly and is the recommended way to call Edge Functions,
-    // solving the persistent 404 error.
     const { data, error } = await supabase.functions.invoke('fetch-live-news', {
         body: { language, category },
     });
@@ -105,7 +86,7 @@ export async function refreshLiveNews(
         throw new Error(`Failed to refresh news. ${error.message}`);
     }
 
-    const result = data; // The data is already parsed JSON
+    const result = data;
     console.log(`Refreshed news: ${result.inserted} new articles inserted out of ${result.total} fetched`);
     return result;
   } catch (error) {

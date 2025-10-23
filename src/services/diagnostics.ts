@@ -1,3 +1,4 @@
+import { supabase } from './supabaseClient';
 import { refreshLiveNews } from './liveNewsService';
 
 export interface DiagnosticResult {
@@ -83,11 +84,7 @@ export class SystemDiagnostics {
 
   private async checkSupabaseConnection() {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const url = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_URL;
-      const key = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_ANON_KEY;
-
-      if (!url || !key) {
+      if (!supabase) {
         this.addResult({
           category: 'Supabase Connection',
           status: 'error',
@@ -96,7 +93,6 @@ export class SystemDiagnostics {
         return;
       }
 
-      const supabase = createClient(url, key);
       const { error } = await supabase.from('news_articles').select('count', { count: 'exact', head: true });
 
       if (error) {
@@ -126,15 +122,9 @@ export class SystemDiagnostics {
 
   private async checkDatabaseTables() {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const url = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_URL;
-      const key = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_ANON_KEY;
+      if (!supabase) return;
 
-      if (!url || !key) return;
-
-      const supabase = createClient(url, key);
-
-      const { data: tables, error } = await supabase
+      const { error } = await supabase
         .from('news_articles')
         .select('id')
         .limit(1);
@@ -172,13 +162,7 @@ export class SystemDiagnostics {
 
   private async checkArticlesData() {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const url = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_SUPABASE_URL || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_URL;
-      const key = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_PUBLIC_Bolt_Database_ANON_KEY;
-
-      if (!url || !key) return;
-
-      const supabase = createClient(url, key);
+      if (!supabase) return;
 
       const { count: arCount, error: arError } = await supabase
         .from('news_articles')
@@ -233,6 +217,7 @@ export class SystemDiagnostics {
         details: 'Manually invoke the Supabase Edge Function to fetch the latest articles from RSS feeds.',
         action: async () => {
             try {
+                // Now calling refresh on both languages for a full refresh.
                 const arResult = await refreshLiveNews('ar', 'all');
                 const enResult = await refreshLiveNews('en', 'all');
                 const message = `Refresh complete. Arabic: ${arResult.inserted} new articles. English: ${enResult.inserted} new articles. New content should appear shortly.`;
