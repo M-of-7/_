@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { runDiagnostics, type DiagnosticResult, type DiagnosticAction } from '../services/diagnostics';
 import SpinnerIcon from './icons/SpinnerIcon';
+import { UI_TEXT } from '../constants';
 
 interface DiagnosticsPanelProps {
   onClose: () => void;
+  uiText: typeof UI_TEXT['en'];
 }
 
-const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
+const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose, uiText }) => {
   const [results, setResults] = useState<Array<DiagnosticResult | DiagnosticAction>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionStatus, setActionStatus] = useState<{ [key: number]: { status: 'running' | 'success' | 'error'; message: string } }>({});
@@ -39,7 +41,7 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
   };
 
   const handleActionClick = async (action: () => Promise<{ success: boolean; message: string }>, index: number) => {
-    setActionStatus(prev => ({ ...prev, [index]: { status: 'running', message: 'Executing...' } }));
+    setActionStatus(prev => ({ ...prev, [index]: { status: 'running', message: uiText.diagnostics_executing } }));
     const result = await action();
     setActionStatus(prev => ({ ...prev, [index]: { status: result.success ? 'success' : 'error', message: result.message } }));
   };
@@ -48,14 +50,14 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl h-[70vh] flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-800 text-white">
-          <h3 className="font-bold text-lg">System Diagnostics</h3>
+          <h3 className="font-bold text-lg">{uiText.diagnostics_panel_title}</h3>
           <button onClick={onClose} className="text-white hover:text-slate-200 text-2xl font-bold">&times;</button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full">
               <SpinnerIcon className="w-12 h-12 text-slate-500" />
-              <p className="mt-4 text-slate-600">Running checks...</p>
+              <p className="mt-4 text-slate-600">{uiText.diagnostics_running_checks}</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -67,8 +69,8 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
                         <span className={`flex items-center justify-center w-6 h-6 rounded-full text-sm font-mono ${getStatusClasses(result.status)}`}>{getStatusIcon(result.status)}</span>
                         <span>{result.category}: {result.message}</span>
                         </div>
-                        {result.details && <p className="mt-2 text-sm text-slate-600 pl-9"><strong>Details:</strong> {result.details}</p>}
-                        {result.fix && <p className="mt-1 text-sm text-slate-600 pl-9"><strong>Suggested Fix:</strong> <code className="bg-slate-200 p-1 rounded text-xs">{result.fix}</code></p>}
+                        {result.details && <p className="mt-2 text-sm text-slate-600 pl-9"><strong>{uiText.diagnostics_details}</strong> {result.details}</p>}
+                        {result.fix && <p className="mt-1 text-sm text-slate-600 pl-9"><strong>{uiText.diagnostics_suggested_fix}</strong> <code className="bg-slate-200 p-1 rounded text-xs">{result.fix}</code></p>}
                         {action && (
                             <div className="pl-9 mt-3">
                                 <button
@@ -76,7 +78,7 @@ const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) => {
                                     disabled={actionStatus[index]?.status === 'running'}
                                     className="px-4 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
                                 >
-                                    {actionStatus[index]?.status === 'running' ? 'Running...' : 'Run Action'}
+                                    {actionStatus[index]?.status === 'running' ? uiText.diagnostics_running : uiText.diagnostics_run_action}
                                 </button>
                                 {actionStatus[index] && (
                                     <div className={`mt-2 p-2 rounded text-sm ${actionStatus[index].status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>

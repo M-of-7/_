@@ -218,8 +218,8 @@ const App: React.FC = () => {
                     isLoggedIn={!!user}
                     onAddComment={handleAddComment}
                 />}
-                {showMessaging && <MessagingPanel onClose={() => setShowMessaging(false)} />}
-                {showDiagnostics && <DiagnosticsPanel onClose={() => setShowDiagnostics(false)} />}
+                {showMessaging && <MessagingPanel onClose={() => setShowMessaging(false)} uiText={uiText} />}
+                {showDiagnostics && <DiagnosticsPanel onClose={() => setShowDiagnostics(false)} uiText={uiText} />}
             </Suspense>
         </div>
     );

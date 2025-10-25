@@ -2,13 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { messagingService, type Message, type Friendship, type Profile } from '../services/messagingService';
 import type { Article } from '../types';
 import SpinnerIcon from './icons/SpinnerIcon';
+import { UI_TEXT } from '../constants';
 
 interface MessagingPanelProps {
   article?: Article;
   onClose: () => void;
+  uiText: typeof UI_TEXT['en'];
 }
 
-const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => {
+const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose, uiText }) => {
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -133,7 +135,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
         {/* Friends List & Search */}
         <div className="w-1/3 border-r border-slate-200 flex flex-col">
           <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-gradient-to-r from-slate-700 to-slate-800">
-            <h3 className="font-bold text-white">Contacts</h3>
+            <h3 className="font-bold text-white">{uiText.messaging_panel_title}</h3>
             <button
               onClick={onClose}
               className="text-white hover:text-slate-200 text-2xl"
@@ -146,7 +148,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for friends..."
+                    placeholder={uiText.messaging_search_placeholder}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
             </div>
@@ -161,7 +163,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
                                 <div className="font-semibold text-slate-800">{profile.display_name}</div>
                                 <div className="text-sm text-slate-500">@{profile.username}</div>
                             </div>
-                            <button onClick={() => handleAddFriend(profile.id)} className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full hover:bg-blue-700">Add</button>
+                            <button onClick={() => handleAddFriend(profile.id)} className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full hover:bg-blue-700">{uiText.messaging_add_friend}</button>
                         </div>
                     ))}
                 </div>
@@ -170,7 +172,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
                 loading ? <div className="p-4 text-center"><SpinnerIcon className="w-6 h-6 mx-auto text-slate-400" /></div> :
                 friends.length === 0 ? (
                 <div className="p-4 text-center text-slate-500">
-                    No friends yet.
+                    {uiText.messaging_no_friends}
                 </div>
                 ) : (
                 friends.map((friendship) => (
@@ -206,10 +208,10 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {loading ? (
-                  <div className="text-center text-slate-500">Loading...</div>
+                  <div className="text-center text-slate-500">{uiText.messaging_loading}</div>
                 ) : messages.length === 0 ? (
                   <div className="text-center text-slate-500">
-                    Start the conversation!
+                    {uiText.messaging_start_conversation}
                   </div>
                 ) : (
                   messages.map((message) => {
@@ -247,7 +249,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
               {article && (
                 <div className="px-4 py-2 border-t border-slate-200 bg-blue-50">
                   <div className="text-xs text-slate-600 mb-1">
-                    Sharing article:
+                    {uiText.messaging_sharing_article}
                   </div>
                   <div className="text-sm font-semibold text-slate-800 truncate">
                     {article.headline}
@@ -261,7 +263,7 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder="Type a message..."
+                    placeholder={uiText.messaging_type_message}
                     className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
@@ -269,16 +271,14 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ article, onClose }) => 
                     disabled={!newMessage.trim()}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
                   >
-                    Send
+                    {uiText.messaging_send}
                   </button>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-500 text-center">
-              Select a friend to chat or
-              <br/>
-              search to add new friends.
+            <div className="flex-1 flex items-center justify-center text-slate-500 text-center whitespace-pre-wrap">
+              {uiText.messaging_select_friend}
             </div>
           )}
         </div>

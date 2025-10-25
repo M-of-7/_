@@ -78,6 +78,25 @@ export const UI_TEXT = {
     end_of_feed_title: "You've Reached the End of the Feed",
     end_of_feed_body: "Our live archive currently holds articles from the past 30 days.",
     try_again: 'Try Again',
+    // Messaging Panel
+    messaging_panel_title: "Contacts",
+    messaging_search_placeholder: "Search for friends...",
+    messaging_add_friend: "Add",
+    messaging_no_friends: "No friends yet.",
+    messaging_loading: "Loading...",
+    messaging_start_conversation: "Start the conversation!",
+    messaging_type_message: "Type a message...",
+    messaging_send: "Send",
+    messaging_sharing_article: "Sharing article:",
+    messaging_select_friend: "Select a friend to chat or\nsearch to add new friends.",
+    // Diagnostics Panel
+    diagnostics_panel_title: "System Diagnostics",
+    diagnostics_running_checks: "Running checks...",
+    diagnostics_details: "Details:",
+    diagnostics_suggested_fix: "Suggested Fix:",
+    diagnostics_run_action: "Run Action",
+    diagnostics_running: "Running...",
+    diagnostics_executing: "Executing...",
   },
   ar: {
     title: 'صحف',
@@ -129,6 +148,25 @@ export const UI_TEXT = {
     end_of_feed_title: "لقد وصلت إلى نهاية البث",
     end_of_feed_body: "يحتوي أرشيفنا المباشر حاليًا على مقالات من آخر 30 يومًا.",
     try_again: 'حاول مرة أخرى',
+    // Messaging Panel
+    messaging_panel_title: "جهات الاتصال",
+    messaging_search_placeholder: "ابحث عن أصدقاء...",
+    messaging_add_friend: "إضافة",
+    messaging_no_friends: "لا يوجد أصدقاء بعد.",
+    messaging_loading: "جاري التحميل...",
+    messaging_start_conversation: "ابدأ المحادثة!",
+    messaging_type_message: "اكتب رسالة...",
+    messaging_send: "إرسال",
+    messaging_sharing_article: "مشاركة مقال:",
+    messaging_select_friend: "اختر صديقًا للدردشة أو\nابحث لإضافة أصدقاء جدد.",
+    // Diagnostics Panel
+    diagnostics_panel_title: "تشخيصات النظام",
+    diagnostics_running_checks: "جاري إجراء الفحوصات...",
+    diagnostics_details: "التفاصيل:",
+    diagnostics_suggested_fix: "الحل المقترح:",
+    diagnostics_run_action: "تشغيل الإجراء",
+    diagnostics_running: "قيد التشغيل...",
+    diagnostics_executing: "جاري التنفيذ...",
   }
 };
 
